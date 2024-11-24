@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyek Akhir</title>
+    <style>
+        :root {
+            --background-color: rgb(255, 255, 255);
+            --border-color: rgb(0, 0, 0, 0.1);
+        }
+
+        body {
+            background-color: var(--background-color);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100 vh;
+            width: 100%;
+            margin: 0 px;
+            font-family: "rubik",sans-serif;
+        }
+
+        h1, h4, a, p, span {
+            font-family: "rubik",sans-serif;
+            color: black;
+        }
+
+        * {
+            box-sizing: border-box;
+            scrollbar-color: transparent transparent;
+            scrollbar-width: 0px;
+        }
+
+        * {
+            box-sizing: border-box;
+            scrollbar-color: transparent transparent;
+            scrollbar-width: 0px;
+        }
+        
+        *::-webkit-scrollbar {
+            width: 0;
+        }
+        
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        *::-webkit-scrollbar-thumb {
+            background: transparent;
+            border: none;
+        }
+        
+        * {
+            -ms-overflow-style: none;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        #login {
+            padding: 25px 20px 32vh 20px;
+        }
+
+        #tombol_login {
+            font-size: 1.2rem;
+            color: black;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #tombol_login:hover {
+            background-color: lightseagreen;
+            color: white;
+        }
+
+        nav {
+            display: flex;
+            width: 100%;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #nav-logo-section {
+            font-weight: bold;
+            font-size: 18pt;
+        }
+
+        nav > .nav-section {
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+            border-left: 1px solid var(--border-color);
+            align-items: center;
+            justify-content: center;
+        }
+
+        #nav-logo-section {
+            flex-grow: 2;
+            justify-content: flex-start;
+        }
+
+        main {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        article {
+            width: 100%;
+        }
+
+        main > article > .article-section {
+            text-align: left;
+            position: relative;
+        }
+
+        #article-header {
+            font-size: 4rem;
+            padding-top: 30vh;
+            margin: 0px 20px 3vh 20px;
+            font-weight: bold;
+            
+        }
+
+        #article-subheader {
+            font-size: 1.5rem;
+            font-weight: normal;
+            margin: 0px 20px 0px 20px;
+        }
+
+        #author {
+            padding: 0px 20px 10px 20px;
+        }
+
+        main > article > .article-title-section {
+            border-bottom: 1px solid var(--border-color);
+            padding-right: 10vh;
+            padding-bottom: 2vh;
+            padding-left: 20vh;
+            align-self: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div id="nav-logo-section" class="nav-section">
+          <a href="index.html">YOGA</a>
+        </div>
+        <div id="nav-allmov-section" class="nav-section">
+          <a href="https://www.instagram.com/corneliusyoga/" target="blank">INSTAGRAM</a>
+        </div>
+        <div id="nav-social-section" class="nav-section">
+          <a href="https://www.linkedin.com/in/cornelius-yoga-783b6a291/" target="blank">LINKEDIN</a>
+        </div>
+        <div id="nav-signin-section" class="nav-section">
+          <a href="https://github.com/CZY774" target="blank">GITHUB</a>
+        </div>
+      </nav>
+    <main>
+        <article>
+            <div class="article-title-section article-section">
+                <h1 id="article-header">Proyek Akhir</h1>
+                <h4 id="article-subheader">Kapita Selekta Software Engineering Alfamart</h4>
+                <p id="author">Cornelius Yoga - 672022204</p>
+                <p id="login">
+                    <a id="tombol_login" href="{{ url_for('login') }}">Explore My Creation</a>
+                </p>
+            </div>
+
+            <!-- Link Explore My Creation -->
+        </article>
+    </main>
+</body>
+</html>

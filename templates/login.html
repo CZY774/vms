@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdn.webix.com/edge/webix.css" type="text/css">
+    <script src="https://cdn.webix.com/edge/webix.js" type="text/javascript"></script>
+    <style>
+        body {
+            background-color: #f7f7f7;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        webix.ui({
+            view: "form",
+            id: "loginForm",
+            container: document.body,
+            width: 400,
+            elements: [
+                { view: "text", label: "Username", name: "username", required: true },
+                { view: "text", label: "Password", name: "password", type: "password", required: true },
+                { margin: 10, cols: [
+                    { 
+                        view: "button", 
+                        value: "Login", 
+                        click: function() {
+                            const values = $$("loginForm").getValues();
+                            webix.ajax().post("/login", values, function(text, data) {
+                                const response = data.json();
+                                if (response.success) {
+                                    window.location.href = response.redirect;
+                                } else {
+                                    webix.message({ type: "error", text: response.message });
+                                }
+                            });
+                        } 
+                    },
+                    { view: "button", value: "Signup", click: function() { window.location.href = "/signup"; } }
+                ]}
+            ],
+            rules: {
+                "username": webix.rules.isNotEmpty,
+                "password": webix.rules.isNotEmpty
+            }
+        });
+    </script>
+</body>
+</html>
