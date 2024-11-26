@@ -1,10 +1,6 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 from flask_cors import CORS
-from connection import (
-    db, users_collection, vendors_collection, 
-    banks_collection, branches_collection,
-    hash_password, verify_password
-)
+from connection import db, users_collection, vendors_collection, banks_collection, branches_collection
 from bson import ObjectId
 import redis
 import datetime
@@ -13,6 +9,7 @@ import html
 import re
 import os
 from functools import wraps
+from bcrypt import gensalt, hashpw
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -50,6 +47,17 @@ def validate_mongodb_id(id_string):
     except:
         return False
 
+def hash_password(password):
+    """Hash password menggunakan bcrypt"""
+    try:
+        return hashpw(password.encode('utf-8'), gensalt())
+    except Exception as e:
+        print(f"Error while hashing password: {e}")
+        return None
+def verify_password(password, hashed):
+    """Verifikasi password dengan hash"""
+    return hashpw(password.encode('utf-8'), hashed) == hashed
+   
 # Authentication & Authorization
 def login_required(f):
     @wraps(f)
@@ -79,42 +87,46 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'GET':
-        return render_template('login.html')
-    
-    data = request.get_json() if request.is_json else request.form
-    username = sanitize_input(data.get('username'))
-    password = data.get('password')
-
-    if not username or not password:
-        return jsonify({"success": False, "message": "Username and password required"}), 400
-
-    user = users_collection.find_one({"username": username})
-    if user and verify_password(password, user['password']):
-        if not user.get('active', True):
-            return jsonify({"success": False, "message": "Account is not active"}), 403
+    try:
+        if request.method == 'GET':
+            return render_template('login.html')
         
-        session_id = os.urandom(24).hex()
-        session['session_id'] = session_id
-        session['user_id'] = str(user['_id'])
-        session['username'] = username
-        session['role'] = user['role']
+        data = request.get_json() if request.is_json else request.form
+        username = sanitize_input(data.get('username'))
+        password = data.get('password')
 
-        redis_client.setex(
-            session_id,
-            int(timedelta(hours=24).total_seconds()),
-            username
-        )
+        if not username or not password:
+            return jsonify({"success": False, "message": "Username and password required"}), 400
 
-        users_collection.update_one(
-            {"_id": user['_id']},
-            {"$set": {"last_login": datetime.utcnow()}}
-        )
+        user = users_collection.find_one({"username": username})
+        if user and verify_password(password, user['password']):
+            if not user.get('active', True):
+                return jsonify({"success": False, "message": "Account is not active"}), 403
+            
+            session_id = os.urandom(24).hex()
+            session['session_id'] = session_id
+            session['user_id'] = str(user['_id'])
+            session['username'] = username
+            session['role'] = user['role']
+            session['email'] = user['email']
 
-        return redirect(url_for(f"{user['role'].lower()}_dashboard"))
+            redis_client.setex(
+                session_id,
+                int(timedelta(hours=24).total_seconds()),
+                username
+            )
 
+            users_collection.update_one(
+                {"_id": user['_id']},
+                {"$set": {"last_login": datetime.utcnow()}}
+            )
 
-    return jsonify({"success": False, "message": "Invalid credentials"}), 401
+            return redirect(url_for(f"{user['role'].lower()}_dashboard"))
+        
+        return jsonify({"success": False, "message": "Invalid credentials"}), 401
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/logout')
 @login_required
@@ -145,6 +157,9 @@ def forgot_password():
     if not user:
         return jsonify({"success": False, "message": "User not found"}), 404
     
+    if user.get('role') == 'DBA':
+        return jsonify({"success": False, "message": "DBA cannot reset their own password"}), 403
+
     hashed_password = hash_password(new_password)
     users_collection.update_one(
         {"_id": user['_id']},
@@ -153,6 +168,15 @@ def forgot_password():
 
     return jsonify({"success": True, "message": "Password reset successful. Please log in."})
 
+@app.route('/api/session-role', methods=['GET'])
+def get_session_role():
+    try:
+        role = session.get('role', None)
+        if not role:
+            return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"role": role}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Dashboard Routes
 @app.route('/dashboard/dba')
@@ -175,11 +199,17 @@ def finance_dashboard():
 def vendor_dashboard():
     return render_template('dashboard-vendor.html')
 
-@app.route('/dashboard/dba/dba-manage-users')
+@app.route('/dashboard/dba/manage-users')
 @login_required
 @role_required(['DBA'])
 def manage_users():
-    return render_template('dba-manage-users.html')
+    return render_template('manage-users.html')
+
+@app.route('/dashboard/admin/manage-users')
+@login_required
+@role_required(['Admin'])
+def manage_user():
+    return render_template('manage-users.html')
 
 @app.route('/dashboard/dba/manage-banks')
 @login_required
@@ -210,13 +240,33 @@ def get_users():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/users', methods=['POST'])
-@role_required(['DBA'])
+@role_required(['DBA', 'Admin'])
 def create_user():
     try:
+        if users_collection.count_documents({}) == 0:  # Jika kosong
+            dba_password = hash_password("dba123!@#")
+            dba_user = {
+                "username": "dba",
+                "email": "dba@example.com",
+                "password": dba_password,
+                "role": "DBA",
+                "active": True,
+                "created_at": datetime.utcnow(),
+                "last_login": None
+            }
+            users_collection.insert_one(dba_user)
+        else:
+            return jsonify({"error": "Users collection is not empty"}), 400
+
+        current_role = session.get('role')
         data = sanitize_input(request.get_json())
         required_fields = ['username', 'email', 'role']
+
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing required fields"}), 400
+
+        if current_role == 'Admin' and data['role'] == 'DBA':
+            return jsonify({"error": "Admin cannot create DBA account"}), 400
 
         if users_collection.find_one({"username": data['username']}):
             return jsonify({"error": "Username already exists"}), 400
@@ -257,36 +307,28 @@ def get_user(username):
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route('/api/users/<username>', methods=['PUT'])
-@role_required(['DBA'])
+@role_required(['DBA', 'Admin'])
 def update_user(username):
     try:
         current_user = session.get('username')
+        current_role = session.get('role')
+
         if not current_user:
             return jsonify({"error": "Unauthorized"}), 401
 
         data = request.get_json()
-        update_data = {key: value for key, value in data.items() if value is not None}
+        user_to_update = users_collection.find_one({"username": username})
 
+        if not user_to_update:
+            return jsonify({"error": "User not found"}), 404
+
+        if current_role == 'Admin' and user_to_update.get('role') == 'DBA':
+            return jsonify({"error": "Admins cannot modify users with the DBA role"}), 403
+
+        update_data = {key: value for key, value in data.items() if value is not None}
         if not update_data:
             return jsonify({"error": "No fields to update"}), 400
 
-        # Validasi perubahan untuk role dan active
-        if username == current_user:
-            if 'role' in update_data or 'active' in update_data:
-                current_role = users_collection.find_one({"username": current_user}, {"role": 1}).get('role')
-
-                if current_role == 'DBA':
-                    dba_count = users_collection.count_documents({"role": "DBA"})
-
-                    # Validasi perubahan role
-                    if 'role' in update_data and update_data['role'] != 'DBA' and dba_count <= 1:
-                        return jsonify({"error": "Cannot remove the only DBA role"}), 403
-
-                    # Validasi perubahan active
-                    if 'active' in update_data and not update_data['active'] and dba_count <= 1:
-                        return jsonify({"error": "Cannot deactivate the only DBA account"}), 403
-
-        # Update data user
         result = users_collection.update_one({"username": username}, {"$set": update_data})
         if result.matched_count == 0:
             return jsonify({"error": "User not found"}), 404
@@ -305,27 +347,25 @@ def get_dba_count():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/users/<username>', methods=['DELETE'])
-@role_required(['DBA'])
+@role_required(['DBA', 'Admin'])
 def delete_user(username):
     try:
         current_user = session.get('username')
+        current_role = session.get('role')
+
         if not current_user:
             return jsonify({"error": "Unauthorized"}), 401
 
         if username == current_user:
             return jsonify({"error": "Cannot delete own account"}), 403
 
-        user = users_collection.find_one({"username": username})
-        if not user:
+        user_to_delete = users_collection.find_one({"username": username})
+        if not user_to_delete:
             return jsonify({"error": "User not found"}), 404
 
-        # Validasi jika role adalah DBA
-        if user.get('role') == 'DBA':
-            dba_count = users_collection.count_documents({"role": "DBA"})
-            if dba_count <= 1:
-                return jsonify({"error": "Cannot delete the only DBA account"}), 403
+        if current_role == 'Admin' and user_to_delete.get('role') == 'DBA':
+            return jsonify({"error": "Admins cannot delete users with the DBA role"}), 403
 
-        # Hapus user
         result = users_collection.delete_one({"username": username})
         if result.deleted_count == 0:
             return jsonify({"error": "User not found"}), 404
@@ -511,16 +551,20 @@ def delete_branch(branch_id):
 def get_vendors():
     try:
         user_role = session.get('role')
-        user_id = session.get('user_id')
+        user_email = session.get('email')
 
         if user_role == 'Vendor':
-            vendors = list(vendors_collection.find({"pic.username": session.get('username')}))
-        else:
-            vendors = list(vendors_collection.find())
+            vendor = vendors_collection.find_one({"emailCompany": user_email})
+            if not vendor:
+                return jsonify({"error": "Vendor not found"}), 404
+            vendor['_id'] = str(vendor['_id'])
+            return jsonify(vendor)
 
+        vendors = list(vendors_collection.find())
         return jsonify([{**vendor, '_id': str(vendor['_id'])} for vendor in vendors])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/vendors', methods=['POST'])
 @role_required(['DBA', 'Admin', 'Vendor'])
@@ -528,7 +572,7 @@ def create_vendor():
     try:
         data = sanitize_input(request.get_json())
         vendor_doc = {
-            "_id": data.get('_id', str(ObjectId())),  # Generate ID
+            "_id": data.get('_id'),  # Required vendor ID
             "vendorName": data.get('vendorName', ''),  # Required vendor name
             "unitUsaha": data.get('unitUsaha', 'IT'),  # Default: IT
             "address": data.get('address', ''),       # Required address
@@ -555,14 +599,7 @@ def create_vendor():
 @role_required(['DBA', 'Admin', 'Vendor'])
 def get_vendor(vendor_id):
     try:
-        user_role = session.get('role')
-        username = session.get('username')
-
-        query = {"_id": vendor_id}
-        if user_role == 'Vendor':
-            query["pic.username"] = username
-
-        vendor = vendors_collection.find_one(query)
+        vendor = vendors_collection.find_one({"_id": vendor_id})
         if not vendor:
             return jsonify({"error": "Vendor not found"}), 404
 
@@ -571,21 +608,20 @@ def get_vendor(vendor_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/vendors/<vendor_id>', methods=['PUT'])
 @role_required(['DBA', 'Admin', 'Vendor'])
 def update_vendor(vendor_id):
     try:
         user_role = session.get('role')
-        username = session.get('username')
-
-        # Verify vendor exists and user has permission
-        query = {"_id": vendor_id}
-        if user_role == 'Vendor':
-            query["pic.username"] = username
-
-        vendor = vendors_collection.find_one(query)
+        user_email = session.get('email')
+        
+        vendor = vendors_collection.find_one({"_id": vendor_id})
         if not vendor:
-            return jsonify({"error": "Vendor not found or access denied"}), 404
+            return jsonify({"error": "Vendor not found"}), 404
+
+        if user_role == 'Vendor' and vendor.get('emailCompany') != user_email:
+            return jsonify({"error": "Access denied"}), 403
 
         data = sanitize_input(request.get_json())
         
@@ -610,12 +646,6 @@ def update_vendor(vendor_id):
             "branchOffice": data.get('branchOffice', vendor.get('branchOffice', [])),
             "accountBank": data.get('accountBank', vendor.get('accountBank', []))
         }
-
-        # Keep original PIC if vendor role
-        if user_role == 'Vendor':
-            update_doc["pic"] = vendor.get('pic', [])
-        else:
-            update_doc["pic"] = data.get('pic', vendor.get('pic', []))
 
         result = vendors_collection.update_one(
             {"_id": vendor_id},

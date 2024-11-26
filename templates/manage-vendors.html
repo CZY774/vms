@@ -6,6 +6,7 @@
     <title>Manage Vendors</title>
 </head>
 <body>
+    <a href="javascript:history.back()">Go Back</a>
     <h1>Manage Vendors</h1>
     <div id="content">
         <!-- Content will be loaded dynamically -->
@@ -24,6 +25,7 @@
                 const content = document.getElementById('content');
                 const tableBody = vendors.map(vendor => `
                     <tr>
+                        <td>${vendor.vendorId || ''}</td>
                         <td>${vendor.partnerType || ''}</td>
                         <td>${vendor.vendorName || ''}</td>
                         <td>${vendor.unitUsaha || ''}</td>
@@ -33,17 +35,17 @@
                         <td>${vendor.noTelp || ''}</td>
                         <td>${vendor.emailCompany || ''}</td>
                         <td>${vendor.website || ''}</td>
+                        <td>${vendor.namePIC || ''}</td>
+                        <td>${vendor.noTelpPIC || ''}</td>
+                        <td>${vendor.emailPIC || ''}</td>
+                        <td>${vendor.positionPIC || ''}</td>
                         <td>${vendor.noNPWP || ''}</td>
                         <td>${vendor.activeStatus === 'Y' ? 'Active' : 'Inactive'}</td>
-                        <td>${vendor.change?.createDate || ''}</td>
-                        <td>${vendor.change?.createUser || ''}</td>
-                        <td>${vendor.change?.updateDate || ''}</td>
-                        <td>${vendor.change?.updateUser || ''}</td>
                         <td>
                             ${vendor.pic?.map(pic => `
-                                <p>${pic.name || ''} (${pic.email || ''}, ${pic.noTelp || ''})</p>
+                            <p>${pic.name || ''} (${pic.email || ''}, ${pic.noTelp || ''})</p>
                             `).join('') || ''}
-                        </td>
+                            </td>
                         <td>
                             ${vendor.supportingEquipment?.map(equipment => `
                                 <p>${equipment.toolType || ''} - ${equipment.count || ''} (${equipment.merk || ''})</p>
@@ -57,8 +59,12 @@
                         <td>
                             ${vendor.accountBank?.map(account => `
                                 <p>${account.bankName || ''} - ${account.accountNumber || ''}</p>
-                            `).join('') || ''}
+                                `).join('') || ''}
                         </td>
+                        <td>${vendor.change?.createDate || ''}</td>
+                        <td>${vendor.change?.createUser || ''}</td>
+                        <td>${vendor.change?.updateDate || ''}</td>
+                        <td>${vendor.change?.updateUser || ''}</td>
                         <td>
                             <button onclick="editVendor('${vendor._id}')">Edit</button>
                             <button onclick="deleteVendor('${vendor._id}')">Delete</button>
@@ -72,6 +78,7 @@
                     <table border="1">
                         <thead>
                             <tr>
+                                <th>Vendor ID</th>
                                 <th>Partner Type</th>
                                 <th>Vendor Name</th>
                                 <th>Unit Usaha</th>
@@ -81,16 +88,20 @@
                                 <th>Phone</th>
                                 <th>Email</th>
                                 <th>Website</th>
+                                <th>Name PIC</th>
+                                <th>Phone PIC</th>
+                                <th>Email PIC</th>
+                                <th>Position PIC</th>
                                 <th>NPWP</th>
-                                <th>Status</th>
-                                <th>Create Date</th>
-                                <th>Create User</th>
-                                <th>Update Date</th>
-                                <th>Update User</th>
+                                <th>Active Status</th>
                                 <th>PIC</th>
                                 <th>Supporting Equipment</th>
                                 <th>Branch Offices</th>
                                 <th>Account Bank</th>
+                                <th>Create Date</th>
+                                <th>Create User</th>
+                                <th>Update Date</th>
+                                <th>Update User</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -111,6 +122,10 @@
             content.innerHTML = `
                 <h2>Add New Vendor</h2>
                 <form id="addVendorForm" onsubmit="submitNewVendor(event)">
+                    <div>
+                        <label for="vendor_code">Vendor Code:</label>
+                        <input type="text" id="vendor_code" name="_id" required>
+                    </div>
                     <div>
                         <label for="vendorName">Vendor Name:</label>
                         <input type="text" id="vendorName" name="vendorName" required><br>
@@ -144,64 +159,68 @@
 
         function addAccountBank() {
             const container = document.getElementById('accountBankFields');
-            const field = `
-                <div>
-                    <label>Bank Code:</label>
-                    <input type="text" name="accountBank_bankCode[]" required>
-                    <label>Bank Name:</label>
-                    <input type="text" name="accountBank_bankName[]" required>
-                    <label>Account Number:</label>
-                    <input type="text" name="accountBank_accountNumber[]" required>
-                    <label>Account Name:</label>
-                    <input type="text" name="accountBank_accountName[]" required>
-                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', field);
+            if (container) {
+                container.insertAdjacentHTML('beforeend', `
+                    <div>
+                        <label>Bank Code:</label>
+                        <input type="text" name="accountBank_bankCode[]" required>
+                        <label>Bank Name:</label>
+                        <input type="text" name="accountBank_bankName[]" required>
+                        <label>Account Number:</label>
+                        <input type="text" name="accountBank_accountNumber[]" required>
+                        <label>Account Name:</label>
+                        <input type="text" name="accountBank_accountName[]" required>
+                        <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                    </div>
+                `);
+            }
         }
 
         function addSupportingEquipment() {
             const container = document.getElementById('equipmentFields');
-            const field = `
-                <div>
-                    <label>Tool Type:</label>
-                    <input type="text" name="supportingEquipment_toolType[]" required>
-                    <label>Count:</label>
-                    <input type="number" name="supportingEquipment_count[]" required>
-                    <label>Merk:</label>
-                    <input type="text" name="supportingEquipment_merk[]" required>
-                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', field);
+            if (container) {
+                container.insertAdjacentHTML('beforeend', `
+                    <div>
+                        <label>Tool Type:</label>
+                        <input type="text" name="supportingEquipment_toolType[]" required>
+                        <label>Count:</label>
+                        <input type="number" name="supportingEquipment_count[]" required>
+                        <label>Merk:</label>
+                        <input type="text" name="supportingEquipment_merk[]" required>
+                        <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                    </div>
+                `);
+            }
         }
 
         function addBranchOffice() {
             const container = document.getElementById('branchOfficeFields');
-            const field = `
-                <div>
-                    <label>Branch Name:</label>
-                    <input type="text" name="branchOffice_branchName[]" required>
-                    <label>Location:</label>
-                    <input type="text" name="branchOffice_location[]" required>
-                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', field);
+            if (container) {
+                container.insertAdjacentHTML('beforeend', `
+                    <div>
+                        <label>Branch Name:</label>
+                        <input type="text" name="branchOffice_branchName[]" required>
+                        <label>Location:</label>
+                        <input type="text" name="branchOffice_location[]" required>
+                        <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                    </div>
+                `);
+            }
         }
 
         function addPIC() {
             const container = document.getElementById('picFields');
-            const field = `
-                <div>
-                    <label>Name:</label>
-                    <input type="text" name="pic_name[]" required>
-                    <label>Email:</label>
-                    <input type="email" name="pic_email[]" required>
-                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', field);
+            if (container) {
+                container.insertAdjacentHTML('beforeend', `
+                    <div>
+                        <label>Name:</label>
+                        <input type="text" name="pic_name[]" required>
+                        <label>Email:</label>
+                        <input type="email" name="pic_email[]" required>
+                        <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                    </div>
+                `);
+            }
         }
 
         function submitNewVendor(event) {
@@ -369,23 +388,95 @@
                         <input type="email" name="emailCompany" value="${vendor.emailCompany || ''}">
                     </div>
                     <div>
+                        <label>Website:</label>
+                        <input type="text" name="website" value="${vendor.website || ''}">
+                    </div>
+                    <div>
+                        <label>Name PIC:</label>
+                        <input type="text" name="namePIC" value="${vendor.namePIC || ''}">
+                    </div>
+                    <div>
+                        <label>Phone PIC:</label>
+                        <input type="text" name="noTelpPIC" value="${vendor.noTelpPIC || ''}">
+                    </div>
+                    <div>
+                        <label>Email PIC:</label>
+                        <input type="email" name="emailPIC" value="${vendor.emailPIC || ''}">
+                    </div>
+                    <div>
+                        <label>Position PIC:</label>
+                        <input type="text" name="positionPIC" value="${vendor.positionPIC || ''}">
+                    </div>
+                    <div>
+                        <label>NPWP:</label>
+                        <input type="text" name="noNPWP" value="${vendor.noNPWP || ''}">
+                    </div>
+                    <div>
+                        <label>Active Status:</label>
+                        <input type="checkbox" name="activeStatus" ${vendor.activeStatus ? 'checked' : ''}>
+                    </div>
+                    <div>
                         <h3>Supporting Equipment</h3>
-                        ${supportingEquipmentRows}
+                        <div id="equipmentFields">
+                            ${(vendor.supportingEquipment || []).map(equipment => `
+                                <div>
+                                    <label>Tool Type:</label>
+                                    <input type="text" name="supportingEquipment_toolType[]" value="${equipment.toolType || ''}">
+                                    <label>Count:</label>
+                                    <input type="number" name="supportingEquipment_count[]" value="${equipment.count || ''}">
+                                    <label>Merk:</label>
+                                    <input type="text" name="supportingEquipment_merk[]" value="${equipment.merk || ''}">
+                                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                                </div>
+                            `).join('')}
+                        </div>
                         <button type="button" onclick="addSupportingEquipment()">Add Equipment</button>
                     </div>
                     <div>
                         <h3>Branch Office</h3>
-                        ${branchOfficeRows}
+                        <div id="branchOfficeFields">
+                            ${(vendor.branchOffice || []).map(branch => `
+                                <div>
+                                    <label>Branch Name:</label>
+                                    <input type="text" name="branchOffice_branchName[]" value="${branch.branchName || ''}">
+                                    <label>Location:</label>
+                                    <input type="text" name="branchOffice_location[]" value="${branch.location || ''}">
+                                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                                </div>
+                            `).join('')}
+                        </div>
                         <button type="button" onclick="addBranchOffice()">Add Branch Office</button>
                     </div>
                     <div>
                         <h3>PIC</h3>
-                        ${picRows}
+                        <div id="picFields">
+                            ${(vendor.pic || []).map(pic => `
+                                <div>
+                                    <label>Name:</label>
+                                    <input type="text" name="pic_name[]" value="${pic.name || ''}">
+                                    <label>Email:</label>
+                                    <input type="email" name="pic_email[]" value="${pic.email || ''}">
+                                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                                </div>
+                            `).join('')}
+                        </div>
                         <button type="button" onclick="addPIC()">Add PIC</button>
                     </div>
                     <div>
                         <h3>Account Bank</h3>
-                        ${accountBankRows}
+                        <div id="accountBankFields">
+                            ${(vendor.accountBank || []).map(account => `
+                                <div>
+                                    <label>Bank Code:</label>
+                                    <input type="text" name="accountBank_bankCode[]" value="${account.bankCode || ''}">
+                                    <label>Bank Name:</label>
+                                    <input type="text" name="accountBank_bankName[]" value="${account.bankName || ''}">
+                                    <label>Account Number:</label>
+                                    <input type="text" name="accountBank_accountNumber[]" value="${account.accountNumber || ''}">
+                                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                                </div>
+                            `).join('')}
+                        </div>
                         <button type="button" onclick="addAccountBank()">Add Account Bank</button>
                     </div>
                     <button type="submit">Save</button>
@@ -398,6 +489,8 @@
             event.preventDefault();
             const formData = new FormData(event.target);
             const vendorData = Object.fromEntries(formData.entries());
+
+            vendorData.activeStatus = vendorData.activeStatus === 'on';
 
             fetch(`/api/vendors/${vendorId}`, {
                 method: 'PUT',
