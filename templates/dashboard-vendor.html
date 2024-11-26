@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Dashboard</title>
+</head>
+<body>
+    <h1>Vendor Dashboard</h1>
+    <nav>
+        <ul>
+            <li><a href="/api/vendors">My Vendor Profile</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </nav>
+    <div id="content">
+        <!-- Content will be loaded dynamically -->
+    </div>
+
+    <script>
+        function loadVendorProfile() {
+            fetch('/api/vendors/profile', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(vendor => {
+                const content = document.getElementById('content');
+                let html = `
+                    <h2>My Vendor Profile</h2>
+                    <div>
+                        <h3>Company Information</h3>
+                        <table border="1">
+                            <tr>
+                                <th>Company Name:</th>
+                                <td>${vendor.companyName}</td>
+                            </tr>
+                            <tr>
+                                <th>Registration Number:</th>
+                                <td>${vendor.registrationNumber}</td>
+                            </tr>
+                            <tr>
+                                <th>Tax ID:</th>
+                                <td>${vendor.taxId}</td>
+                            </tr>
+                            <tr>
+                                <th>Address:</th>
+                                <td>${vendor.address}</td>
+                            </tr>
+                            <tr>
+                                <th>Contact Person:</th>
+                                <td>${vendor.contactPerson}</td>
+                            </tr>
+                            <tr>
+                                <th>Contact Email:</th>
+                                <td>${vendor.email}</td>
+                            </tr>
+                            <tr>
+                                <th>Contact Phone:</th>
+                                <td>${vendor.phone}</td>
+                            </tr>
+                        </table>
+                        <button onclick="showEditProfileForm()">Edit Profile</button>
+                    </div>
+    
+                    <div>
+                        <h3>Bank Accounts</h3>
+                        <table border="1">
+                            <thead>
+                                <tr>
+                                    <th>Bank Name</th>
+                                    <th>Account Number</th>
+                                    <th>Branch</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+    
+                vendor.bankAccounts.forEach(account => {
+                    html += `
+                        <tr>
+                            <td>${account.bankName}</td>
+                            <td>${account.accountNumber}</td>
+                            <td>${account.branch}</td>
+                            <td>${account.status}</td>
+                        </tr>
+                    `;
+                });
+    
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                content.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('content').innerHTML = `
+                    <p style="color: red">Error loading vendor profile: ${error.message}</p>
+                `;
+            });
+        }
+    
+        // Load vendor profile by default when page loads
+        document.addEventListener('DOMContentLoaded', loadVendorProfile);
+    </script>
+</body>
+</html>

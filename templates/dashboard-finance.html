@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashboard</title>
+</head>
+<body>
+    <h1>Finance Dashboard</h1>
+    <nav>
+        <ul>
+            <li><a href="/api/banks">Manage Banks</a></li>
+            <li><a href="/api/branches">Manage Branches</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </nav>
+    <div id="content">
+        <!-- Content will be loaded dynamically -->
+    </div>
+
+    <script>
+        function loadBanks() {
+            fetch('/api/banks', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(banks => {
+                const content = document.getElementById('content');
+                let html = `
+                    <h2>Bank Management</h2>
+                    <table border="1">
+                        <thead>
+                            <tr>
+                                <th>Bank Name</th>
+                                <th>Code</th>
+                                <th>Total Vendors</th>
+                                <th>Total Active Accounts</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+    
+                banks.forEach(bank => {
+                    html += `
+                        <tr>
+                            <td>${bank.name}</td>
+                            <td>${bank.code}</td>
+                            <td>${bank.totalVendors}</td>
+                            <td>${bank.activeAccounts}</td>
+                            <td>
+                                <button onclick="viewBankDetails('${bank.code}')">View Details</button>
+                                <button onclick="exportBankReport('${bank.code}')">Export Report</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+    
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                content.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('content').innerHTML = `
+                    <p style="color: red">Error loading banks: ${error.message}</p>
+                `;
+            });
+        }
+    
+        function loadBranches() {
+            fetch('/api/branches', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(branches => {
+                const content = document.getElementById('content');
+                let html = `
+                    <h2>Branch Management</h2>
+                    <table border="1">
+                        <thead>
+                            <tr>
+                                <th>Branch Name</th>
+                                <th>Bank</th>
+                                <th>Location</th>
+                                <th>Total Accounts</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+    
+                branches.forEach(branch => {
+                    html += `
+                        <tr>
+                            <td>${branch.name}</td>
+                            <td>${branch.bank}</td>
+                            <td>${branch.location}</td>
+                            <td>${branch.totalAccounts}</td>
+                            <td>
+                                <button onclick="viewBranchDetails('${branch.id}')">View Details</button>
+                                <button onclick="exportBranchReport('${branch.id}')">Export Report</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+    
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                content.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('content').innerHTML = `
+                    <p style="color: red">Error loading branches: ${error.message}</p>
+                `;
+            });
+        }
+    
+        // Load banks by default when page loads
+        document.addEventListener('DOMContentLoaded', loadBanks);
+    </script>
+</body>
+</html>

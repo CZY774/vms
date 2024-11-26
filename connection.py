@@ -52,9 +52,9 @@ try:
         dba_password = hash_password("dba123!@#")
         dba_user = {
             "username": "dba",
+            "email": "dba@example.com",
             "password": dba_password,
             "role": "DBA",
-            "email": "dba@example.com",
             "active": True,
             "created_at": datetime.utcnow(),
             "last_login": None
@@ -78,9 +78,9 @@ def create_user(username, password, role, email=None):
         hashed_pw = hash_password(password)
         user_doc = {
             "username": username,
+            "email": email,
             "password": hashed_pw,
             "role": role,
-            "email": email,
             "active": True,
             "created_at": datetime.utcnow(),
             "last_login": None

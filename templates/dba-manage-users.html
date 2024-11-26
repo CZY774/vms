@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users</title>
+</head>
+<body>
+    <h1>Manage Users</h1>
+    <div id="content">
+        <!-- Content will be loaded dynamically -->
+    </div>
+    <li><a href="/logout">Logout</a></li>
+
+    <script>
+        function loadUsers() {
+            fetch('/api/users', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(users => {
+                const content = document.getElementById('content');
+                
+                let html = `
+                    <h2>User Management</h2>
+                    <button onclick="showAddUserForm()">Add New User</button>
+                    <table border="1">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Active</th>
+                                <th>Created At</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                users.forEach(user => {
+                    html += `
+                        <tr>
+                            <td>${user.username}</td>
+                            <td>${user.email}</td>
+                            <td>${user.role}</td>
+                            <td>${user.active ? 'Yes' : 'No'}</td>
+                            <td>${user.created_at}</td>
+                            <td>${user.last_login || 'Haven\'t logged in'}</td>
+                            <td>
+                                <button onclick="editUser('${user.username}')">Edit</button>
+                                ${user.username !== getCurrentUsername() ? '<button onclick="deleteUser(\'' + user.username + '\')">Delete</button>' : ''}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                `;
+
+                content.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('content').innerHTML = `
+                    <p style="color: red">Error loading users: ${error.message}</p>
+                `;
+            });
+        }
+
+        function editUser(username) {
+            fetch(`/api/users/${username}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // Pastikan session dikirim
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to fetch user details');
+                    });
+                }
+                return response.json();
+            })
+            .then(user => {
+                showEditUserForm(user); // Menampilkan form dengan data user
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(`Error fetching user details: ${error.message}`);
+            });
+        }
+
+        function submitEditUser(username) {
+            // Ambil data dari form
+            const formData = new FormData(document.getElementById('editUserForm'));
+            const userData = Object.fromEntries(formData.entries());
+
+            // Hapus field password jika kosong
+            if (!userData.password) {
+                delete userData.password;
+            }
+
+            fetch(`/api/users/${username}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(userData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to update user');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('User updated successfully');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(`Error updating user: ${error.message}`);
+            });
+        }
+
+    
+        function deleteUser(username) {
+            fetch(`/api/users/${username}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (response.ok) {
+                        alert('User deleted successfully');
+                        loadUsers();
+                    } else {
+                        alert(data.error || 'Failed to delete user');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting user:', error);
+                    alert('Error deleting user');
+                });
+        }
+
+        function showAddUserForm() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <h2>Add New User</h2>
+                <form id="addUserForm" onsubmit="submitNewUser(event)">
+                    <div>
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div>
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div>
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div>
+                        <label for="role">Role:</label>
+                        <select id="role" name="role" required>
+                            <option value="DBA">DBA</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Vendor">Vendor</option>
+                            <option value="Finance">Finance</option>
+                        </select>
+                    </div>
+                    <button type="submit">Add User</button>
+                    <button type="button" onclick="loadUsers()">Cancel</button>
+                </form>
+            `;
+        }
+    
+        function showEditUserForm(user) {
+            const content = document.getElementById('content');
+            const isCurrentUser = user.username === getCurrentUsername();
+
+            // Fetch jumlah DBA
+            fetch('/api/role/dba-count', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const isOnlyDBA = data.count <= 1;
+                    renderEditForm(user, isCurrentUser, isOnlyDBA);
+                })
+                .catch(error => {
+                    console.error('Error fetching DBA count:', error);
+                    alert('Error checking DBA role count');
+                });
+        }
+
+        function renderEditForm(user, isCurrentUser, isOnlyDBA) {
+            const content = document.getElementById('content');
+
+            content.innerHTML = `
+                <h2>Edit User</h2>
+                <form id="editUserForm" onsubmit="submitEditUser(event, '${user.username}')">
+                    <div>
+                        <label for="username">Username:</label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            value="${user.username}" 
+                            ${isCurrentUser ? 'disabled' : ''} 
+                            required>
+                    </div>
+                    <div>
+                        <label for="email">Email:</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            value="${user.email}" 
+                            required>
+                    </div>
+                    <div>
+                        <label for="password">Password:</label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Leave blank to keep unchanged">
+                    </div>
+                    <div>
+                        <label for="role">Role:</label>
+                        <select 
+                            id="role" 
+                            name="role" 
+                            ${isOnlyDBA && isCurrentUser ? 'disabled' : ''} 
+                            required>
+                            <option value="Admin" ${user.role === 'Admin' ? 'selected' : ''}>Admin</option>
+                            <option value="Vendor" ${user.role === 'Vendor' ? 'selected' : ''}>Vendor</option>
+                            <option value="Finance" ${user.role === 'Finance' ? 'selected' : ''}>Finance</option>
+                            <option value="DBA" ${user.role === 'DBA' ? 'selected' : ''}>DBA</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="active">Active:</label>
+                        <input 
+                            type="checkbox" 
+                            id="active" 
+                            name="active" 
+                            ${user.active ? 'checked' : ''} 
+                            ${isOnlyDBA && isCurrentUser ? 'disabled' : ''}>
+                    </div>
+                    <div>
+                        <button type="submit">Update</button>
+                        <button type="button" onclick="loadUsers()">Cancel</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function submitNewUser(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const userData = {
+                username: formData.get('username'),
+                password: formData.get('password'),
+                role: formData.get('role'),
+                email: formData.get('email')
+            };
+
+            fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(userData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    loadUsers();  // Reload users list
+                } else {
+                    throw new Error(data.error || 'Failed to add user');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(`Error adding user: ${error.message}`);
+            });
+        }
+
+        function submitEditUser(event, username) {
+            event.preventDefault(); // Mencegah reload halaman saat form disubmit
+
+            // Ambil data dari form
+            const formData = new FormData(document.getElementById('editUserForm'));
+            const userData = Object.fromEntries(formData.entries());
+
+            // Ubah checkbox 'active' menjadi boolean
+            userData.active = formData.get('active') === 'on';
+
+            // Hapus field password jika kosong
+            if (!userData.password) {
+                delete userData.password;
+            }
+
+            fetch(`/api/users/${username}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(userData),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Failed to update user');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('User updated successfully');
+                loadUsers(); // Panggil fungsi untuk memuat ulang daftar user
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(`Error updating user: ${error.message}`);
+            });
+        }
+
+    
+        function getCurrentUsername() {
+            return 'current_dba_user'; // Simulasi: dapatkan username pengguna aktif
+        }
+    
+        document.addEventListener('DOMContentLoaded', loadUsers);
+    </script>
+</body>
+</html>
