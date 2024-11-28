@@ -1,0 +1,751 @@
+let equipmentIndex = 0;
+let branchOfficeIndex = 0;
+let PICIndex = 0;
+let accountBankIndex = 0;
+
+function loadVendors() {
+    const includedContent = document.getElementById('includedContent');
+    fetch('/api/vendors', {
+        method: 'GET',
+        headers: { 
+            'Content-Type': 'application/json' 
+        },
+        credentials: 'include',
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        const vendors = Array.isArray(data) ? data : [];
+        
+        const includedContent = document.getElementById('includedContent');
+        const tableBody = vendors.map(vendor => `
+            <tr>
+                <td>${vendor._id || ''}</td>
+                <td>${vendor.partnerType || ''}</td>
+                <td>${vendor.vendorName || ''}</td>
+                <td>${vendor.unitUsaha || ''}</td>
+                <td>${vendor.address || ''}</td>
+                <td>${vendor.country || ''}</td>
+                <td>${vendor.province || ''}</td>
+                <td>${vendor.noTelp || ''}</td>
+                <td>${vendor.emailCompany || ''}</td>
+                <td>${vendor.website || ''}</td>
+                <td>${vendor.namePIC || ''}</td>
+                <td>${vendor.noTelpPIC || ''}</td>
+                <td>${vendor.emailPIC || ''}</td>
+                <td>${vendor.positionPIC || ''}</td>
+                <td>${vendor.NPWP || ''}</td>
+                <td>${vendor.activeStatus === 'Y' ? 'Active' : 'Inactive'}</td>
+                <td>
+                    ${vendor.PIC?.map(PIC => `
+                    <p>${PIC.name || ''} (${PIC.email || ''}, ${PIC.noTelp || ''})</p>
+                    `).join('') || ''}
+                </td>
+                <td>
+                    ${vendor.supportingEquipment?.map(equipment => `
+                        <p>${equipment.toolType || ''} - ${equipment.count || ''} (${equipment.merk || ''})</p>
+                    `).join('') || ''}
+                </td>
+                <td>
+                    ${vendor.branchOffice?.map(branch => `
+                        <p>${branch.branchName || ''} - ${branch.location || ''}</p>
+                    `).join('') || ''}
+                </td>
+                <td>
+                    ${vendor.accountBank?.map(account => `
+                        <p>${account.bankName || ''} - ${account.accountNumber || ''}</p>
+                    `).join('') || ''}
+                </td>
+                <td>${vendor.change?.createDate || ''}</td>
+                <td>${vendor.change?.createUser || ''}</td>
+                <td>${vendor.change?.updateDate || ''}</td>
+                <td>${vendor.change?.updateUser || ''}</td>
+                <td>
+                    <button onclick="editVendor('${vendor._id}')" id="tombol-biasa">Edit</button>
+                    <button onclick="deleteVendor('${vendor._id}')" id="tombol-biasa">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+
+        includedContent.innerHTML = `
+            <h1>Manage Vendors</h1>
+            <button onclick="showAddVendorForm()" id="tombol-biasa">Add New Vendor</button>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Vendor ID</th>
+                        <th>Partner Type</th>
+                        <th>Vendor Name</th>
+                        <th>Unit Usaha</th>
+                        <th>Address</th>
+                        <th>Country</th>
+                        <th>Province</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Website</th>
+                        <th>Name PIC</th>
+                        <th>Phone PIC</th>
+                        <th>Email PIC</th>
+                        <th>Position PIC</th>
+                        <th>NPWP</th>
+                        <th>Active Status</th>
+                        <th>PIC</th>
+                        <th>Supporting Equipment</th>
+                        <th>Branch Offices</th>
+                        <th>Account Bank</th>
+                        <th>Create Date</th>
+                        <th>Create User</th>
+                        <th>Update Date</th>
+                        <th>Update User</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>${tableBody}</tbody>
+            </table>
+        `;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('includedContent').innerHTML = `
+            <p style="color: red">Error loading vendors: ${error.message}</p>
+        `;
+    });
+}
+
+// Function to show Add Vendor Form
+function showAddVendorForm() {
+    const includedContent = document.getElementById('includedContent');
+    includedContent.innerHTML = `
+        <h1>Add New Vendor</h2>
+        <form id="addVendorForm" onsubmit="submitNewVendor(event)">
+            <div>
+                <label for="vendor_id">Vendor ID:</label>
+                <input type="text" id="vendor_id" name="_id" required>
+            </div>
+            <div>
+                <label for="partner_type">Partner Type:</label>
+                <input type="text" id="partner_type" name="partnerType" required>
+            </div>
+            <div>
+                <label for="vendor_name">Vendor Name:</label>
+                <input type="text" id="vendor_name" name="vendorName" required>
+            </div>
+            <div>
+                <label for="unit_usaha">Unit Usaha:</label>
+                <input type="text" id="unit_usaha" name="unitUsaha" required>
+            </div>
+            <div>
+                <label for="address">Address:</label>
+                <input type="text" id="address" name="address" required>
+            </div>
+            <div>
+                <label for="country">Country:</label>
+                <input type="text" id="country" name="country" required>
+            </div>
+            <div>
+                <label for="no_telp">Phone:</label>
+                <input type="text" id="no_telp" name="noTelp" required>
+            </div>
+            <div>
+                <label for="email_company">Email:</label>
+                <input type="email" id="email_company" name="emailCompany" required>
+            </div>
+            <div>
+                <h3>Supporting Equipment</h3>
+                <div id="equipmentFields"></div>
+                <button type="button" onclick="addSupportingEquipment()" id="tombol-biasa">Add Equipment</button>
+            </div>
+
+            <div>
+                <h3>Branch Office</h3>
+                <div id="branchOfficeFields"></div>
+                <button type="button" onclick="addBranchOffice()" id="tombol-biasa">Add Branch Office</button>
+            </div>
+
+            <div>
+                <h3>PIC</h3>
+                <div id="PICFields"></div>
+                <button type="button" onclick="addPIC()" id="tombol-biasa">Add PIC</button>
+            </div>
+
+            <div>
+                <h3>Account Bank</h3>
+                <div id="accountBankFields"></div>
+                <button type="button" onclick="addAccountBank()" id="tombol-biasa">Add Account Bank</button>
+            </div>
+
+            <button type="submit" id="tombol-biasa">Save Vendor</button>
+        </form>
+    `;
+
+    // Load active banks
+    fetch('/api/banks?status=ACTIVE', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(activeBanks => {
+        const accountBankFields = document.getElementById('accountBankFields');
+        const bankSelect = document.createElement('select');
+        bankSelect.id = 'bankSelect';
+        bankSelect.innerHTML = '<option value="">Select Bank</option>';
+        
+        activeBanks.forEach(bank => {
+            const option = document.createElement('option');
+            option.value = bank._id;
+            option.textContent = bank.bankDesc;
+            bankSelect.appendChild(option);
+        });
+
+        // Store for later use in addAccountBank
+        window.activeBanks = activeBanks;
+    })
+    .catch(error => {
+        console.error('Error loading banks:', error);
+        alert('Failed to load bank list.');
+    });
+}
+
+
+
+// Dynamic Field Addition Functions
+function addSupportingEquipment() {
+    const equipmentFields = document.getElementById("equipmentFields");
+    equipmentFields.insertAdjacentHTML("beforeend", `
+        <div class="dynamic-field">
+            <label>Tool Type:</label>
+            <input type="text" name="supportingEquipment_toolType[${equipmentIndex}]">
+            <label>Count:</label>
+            <input type="number" name="supportingEquipment_count[${equipmentIndex}]">
+            <label>Merk:</label>
+            <input type="text" name="supportingEquipment_merk[${equipmentIndex}]">
+            <label>Condition:</label>
+            <input type="text" name="supportingEquipment_condition[${equipmentIndex}]">
+            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+        </div>
+    `);
+    equipmentIndex++;
+}
+
+function addBranchOffice() {
+    const branchOfficeFields = document.getElementById("branchOfficeFields");
+    branchOfficeFields.insertAdjacentHTML("beforeend", `
+        <div class="dynamic-field">
+            <label>Branch Name:</label>
+            <input type="text" name="branchOffice_branchName[${branchOfficeIndex}]">
+            <label>Location:</label>
+            <input type="text" name="branchOffice_location[${branchOfficeIndex}]">
+            <label>Address:</label>
+            <input type="text" name="branchOffice_address[${branchOfficeIndex}]">
+            <label>Country:</label>
+            <input type="text" name="branchOffice_country[${branchOfficeIndex}]">
+            <label>No Telp:</label>
+            <input type="text" name="branchOffice_noTelp[${branchOfficeIndex}]">
+            <label>Website:</label>
+            <input type="text" name="branchOffice_website[${branchOfficeIndex}]">
+            <label>Email:</label>
+            <input type="email" name="branchOffice_email[${branchOfficeIndex}]">
+            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+        </div>
+    `);
+    branchOfficeIndex++;
+}
+
+function addPIC() {
+    const PICFields = document.getElementById("PICFields");
+    PICFields.insertAdjacentHTML("beforeend", `
+        <div class="dynamic-field">
+            <label>Username</label>
+            <input type="text" name="PIC_username[${PICIndex}]">
+            <label>Name:</label>
+            <input type="text" name="PIC_name[${PICIndex}]">
+            <label>Email:</label>
+            <input type="email" name="PIC_email[${PICIndex}]">
+            <label>No Telp:</label>
+            <input type="text" name="PIC_noTelp[${PICIndex}]">
+            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+        </div>
+    `);
+    PICIndex++;
+}
+
+function addAccountBank() {
+    const accountBankFields = document.getElementById("accountBankFields");
+    
+    // Create bank select element if not already created
+    let bankSelect = document.getElementById('bankSelect');
+    if (!bankSelect) {
+        bankSelect = document.createElement('select');
+        bankSelect.id = 'bankSelect';
+        bankSelect.innerHTML = '<option value="">Select Bank</option>';
+        
+        (window.activeBanks || []).forEach(bank => {
+            const option = document.createElement('option');
+            option.value = bank._id;
+            option.textContent = bank.bankDesc;
+            bankSelect.appendChild(option);
+        });
+    }
+
+    accountBankFields.insertAdjacentHTML("beforeend", `
+        <div class="dynamic-field">
+            <label>Bank Name:</label>
+            ${bankSelect.outerHTML}
+            <label>Account Number:</label>
+            <input type="text" name="accountBank_accountNumber[${accountBankIndex}]" required>
+            <label>Account Name:</label>
+            <input type="text" name="accountBank_accountName[${accountBankIndex}]" required>
+            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+        </div>
+    `);
+    accountBankIndex++;
+}
+
+// Parse Array Fields
+function parseArrayFields(formData, keyPrefix) {
+    const result = [];
+    const regex = new RegExp(`^${keyPrefix}_\\w+\\[\\d+\\]$`);
+    
+    for (const [key, value] of formData.entries()) {
+        if (regex.test(key)) {
+            const matches = key.match(`${keyPrefix}_(\\w+)\\[(\\d+)\\]`);
+            if (matches) {
+                const fieldName = matches[1];
+                const index = parseInt(matches[2], 10);
+                
+                if (!result[index]) result[index] = {};
+                result[index][fieldName] = value;
+            }
+        }
+    }
+    
+    return result.filter(item => Object.keys(item).length > 0);
+}
+
+// Submit Vendor Form
+function submitNewVendor(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    // Create vendor data object with required fields
+    const vendorData = {
+        _id: document.getElementById('vendor_id').value,
+        partnerType: document.getElementById('partner_type').value,
+        vendorName: document.getElementById('vendor_name').value,
+        unitUsaha: document.getElementById('unit_usaha').value,
+        address: document.getElementById('address').value,
+        country: document.getElementById('country').value,
+        noTelp: document.getElementById('no_telp').value,
+        emailCompany: document.getElementById('email_company').value,
+    };
+
+    // Parse dynamic fields
+    vendorData.supportingEquipment = parseArrayFields(formData, "supportingEquipment") || [];
+    vendorData.branchOffice = parseArrayFields(formData, "branchOffice") || [];
+    vendorData.PIC = parseArrayFields(formData, "PIC") || [];
+    
+    // Handle Account Banks - use bank code directly
+    vendorData.accountBank = [];
+    const accountBankFields = document.querySelectorAll('#accountBankFields .dynamic-field');
+    accountBankFields.forEach((field, index) => {
+        const bankSelect = field.querySelector('select');
+        const accountNumber = field.querySelector('input[name^="accountBank_accountNumber"]');
+        const accountName = field.querySelector('input[name^="accountBank_accountName"]');
+        
+        vendorData.accountBank.push({
+            bankId: bankSelect.value,  // This will be the bank code like "BBCA"
+            accountNumber: accountNumber.value,
+            accountName: accountName.value
+        });
+    });
+
+    // Send data to server
+    fetch("/api/vendors", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(vendorData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errorData => {
+                throw new Error(errorData.error || "Failed to create vendor");
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert("Vendor created successfully");
+        loadVendors();
+        equipmentIndex = 0;
+        branchOfficeIndex = 0;
+        PICIndex = 0;
+        accountBankIndex = 0;
+        // Clear dynamic fields
+        document.getElementById('equipmentFields').innerHTML = '';
+        document.getElementById('branchOfficeFields').innerHTML = '';
+        document.getElementById('PICFields').innerHTML = '';
+        document.getElementById('accountBankFields').innerHTML = '';
+    })
+    .catch(error => {
+        console.error("Error:", error.message);
+        alert(`Error creating vendor: ${error.message}`);
+    });
+}
+
+
+
+function editVendor(vendorId) {
+    fetch(`/api/vendors/${vendorId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errorData => {
+                throw new Error(errorData.error || `Failed to fetch vendor details for ID: ${vendorId}`);
+            });
+        }
+        return response.json();
+    })
+    .then(vendor => {
+        showEditVendorForm(vendor);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(`Error: ${error.message}`);
+    });
+}
+
+function showEditVendorForm(vendor) {
+    const includedContent = document.getElementById('includedContent');
+    const supportingEquipmentRows = (vendor.supportingEquipment || []).map(equipment => `
+        <div>
+            <label>Tool Type:</label>
+            <input type="text" name="supportingEquipment_toolType[]" value="${equipment.toolType || ''}">
+            <label>Count:</label>
+            <input type="number" name="supportingEquipment_count[]" value="${equipment.count || ''}">
+            <label>Merk:</label>
+            <input type="text" name="supportingEquipment_merk[]" value="${equipment.merk || ''}">
+            <label>Condition:</label>
+            <input type="text" name="supportingEquipment_condition[]" value="${equipment.condition || ''}">
+        </div>
+    `).join('');
+
+    const branchOfficeRows = (vendor.branchOffice || []).map(branch => `
+        <div>
+            <label>Branch Name:</label>
+            <input type="text" name="branchOffice_branchName[]" value="${branch.branchName || ''}">
+            <label>Location:</label>
+            <input type="text" name="branchOffice_location[]" value="${branch.location || ''}">
+            <label>Address:</label>
+            <input type="text" name="branchOffice_address[]" value="${branch.address || ''}">
+            <label>Country:</label>
+            <input type="text" name="branchOffice_country[]" value="${branch.country || ''}">
+            <label>Phone:</label>
+            <input type="text" name="branchOffice_noTelp[]" value="${branch.noTelp || ''}">
+            <label>Website:</label>
+            <input type="text" name="branchOffice_website[]" value="${branch.website || ''}">
+            <label>Email:</label>
+            <input type="email" name="branchOffice_email[]" value="${branch.email || ''}">
+        </div>
+    `).join('');
+
+    const PICRows = (vendor.PIC || []).map(PIC => `
+        <div>
+            <label>Username:</label>
+            <input type="text" name="PIC_username[]" value="${PIC.username || ''}">
+            <label>Name:</label>
+            <input type="text" name="PIC_name[]" value="${PIC.name || ''}">
+            <label>Email:</label>
+            <input type="email" name="PIC_email[]" value="${PIC.email || ''}">
+            <label>Phone:</label>
+            <input type="text" name="PIC_noTelp[]" value="${PIC.noTelp || ''}">
+        </div>
+    `).join('');
+
+    const accountBankRows = (vendor.accountBank || []).map(account => `
+        <div>
+            <label>Bank Code:</label>
+            <input type="text" name="accountBank_bankCode[]" value="${account.bankCode || ''}" disabled>
+            <label>Bank Name:</label>
+            <input type="text" name="accountBank_bankName[]" value="${account.bankName || ''}" disabled>
+            <label>Account Number:</label>
+            <input type="text" name="accountBank_accountNumber[]" value="${account.accountNumber || ''}">
+            <label>Account Name:</label>
+            <input type="text" name="accountBank_accountName[]" value="${account.accountName || ''}">
+        </div>
+    `).join('');
+
+    includedContent.innerHTML = `
+        <h1>Edit Vendor</h1>
+        <form id="editVendorForm" onsubmit="submitEditVendor(event, '${vendor._id}')">
+            <div>
+                <label>Partner Type:</label>
+                <input type="text" name="partnerType" value="${vendor.partnerType || ''}">
+            </div>
+            <div>
+                <label>Vendor Name:</label>
+                <input type="text" name="vendorName" value="${vendor.vendorName || ''}">
+            </div>
+            <div>
+                <label>Unit Usaha:</label>
+                <input type="text" name="unitUsaha" value="${vendor.unitUsaha || ''}">
+            </div>
+            <div>
+                <label>Address:</label>
+                <input type="text" name="address" value="${vendor.address || ''}">
+            </div>
+            <div>
+                <label>Country:</label>
+                <input type="text" name="country" value="${vendor.country || ''}">
+            </div>
+            <div>
+                <label>Province:</label>
+                <input type="text" name="province" value="${vendor.province || ''}">
+            </div>
+            <div>
+                <label>Phone:</label>
+                <input type="text" name="noTelp" value="${vendor.noTelp || ''}">
+            </div>
+            <div>
+                <label>Company Email:</label>
+                <input type="email" name="emailCompany" value="${vendor.emailCompany || ''}">
+            </div>
+            <div>
+                <label>Website:</label>
+                <input type="text" name="website" value="${vendor.website || ''}">
+            </div>
+            <div>
+                <label>Name PIC:</label>
+                <input type="text" name="namePIC" value="${vendor.namePIC || ''}">
+            </div>
+            <div>
+                <label>Phone PIC:</label>
+                <input type="text" name="noTelpPIC" value="${vendor.noTelpPIC || ''}">
+            </div>
+            <div>
+                <label>Email PIC:</label>
+                <input type="email" name="emailPIC" value="${vendor.emailPIC || ''}">
+            </div>
+            <div>
+                <label>Position PIC:</label>
+                <input type="text" name="positionPIC" value="${vendor.positionPIC || ''}">
+            </div>
+            <div>
+                <label>NPWP:</label>
+                <input type="text" name="NPWP" value="${vendor.NPWP || ''}">
+            </div>
+            <div>
+                <label>Active Status:</label>
+                <select id="active_status" name="activeStatus">
+                    <option value="Y" ${vendor.activeStatus === 'Y' ? 'selected' : ''}>Active</option>
+                    <option value="N" ${vendor.activeStatus === 'N' ? 'selected' : ''}>Inactive</option>
+                </select>
+            </div>
+            <div>
+                <h3>Supporting Equipment</h3>
+                <div id="equipmentFields">
+                    ${(vendor.supportingEquipment || []).map(equipment => `
+                        <div>
+                            <label>Tool Type:</label>
+                            <input type="text" name="supportingEquipment_toolType[]" value="${equipment.toolType || ''}">
+                            <label>Count:</label>
+                            <input type="number" name="supportingEquipment_count[]" value="${equipment.count || ''}">
+                            <label>Merk:</label>
+                            <input type="text" name="supportingEquipment_merk[]" value="${equipment.merk || ''}">
+                            <label>Condition:</label>
+                            <input type="text" name="supportingEquipment_condition[]" value="${equipment.condition || ''}">
+                            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" onclick="addSupportingEquipment()" id="tombol-biasa">Add Equipment</button>
+            </div>
+            <div>
+                <h3>Branch Office</h3>
+                <div id="branchOfficeFields">
+                    ${(vendor.branchOffice || []).map(branch => `
+                        <div>
+                            <label>Branch Name:</label>
+                            <input type="text" name="branchOffice_branchName[]" value="${branch.branchName || ''}">
+                            <label>Location:</label>
+                            <input type="text" name="branchOffice_location[]" value="${branch.location || ''}">
+                            <label>Address:</label>
+                            <input type="text" name="branchOffice_address[]" value="${branch.address || ''}">
+                            <label>Country:</label>
+                            <input type="text" name="branchOffice_country[]" value="${branch.country || ''}">
+                            <label>No Telp:</label>
+                            <input type="text" name="branchOffice_noTelp[]" value="${branch.noTelp || ''}">
+                            <label>Website:</label>
+                            <input type="text" name="branchOffice_website[]" value="${branch.website || ''}">
+                            <label>Email:</label>
+                            <input type="email" name="branchOffice_email[]" value="${branch.email || ''}">
+                            <button type="button" onclick="this.parentElement.remove() id="tombol-error">Remove</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" onclick="addBranchOffice()" id="tombol-biasa">Add Branch Office</button>
+            </div>
+            <div>
+                <h3>PIC</h3>
+                <div id="PICFields">
+                    ${(vendor.PIC || []).map(PIC => `
+                        <div>
+                            <label>Username:</label>
+                            <input type="text" name="PIC_username[]" value="${PIC.username || ''}">
+                            <label>Name:</label>
+                            <input type="text" name="PIC_name[]" value="${PIC.name || ''}">
+                            <label>Email:</label>
+                            <input type="email" name="PIC_email[]" value="${PIC.email || ''}">
+                            <label>No Telp:</label>
+                            <input type="text" name="PIC_noTelp[]" value="${PIC.noTelp || ''}">
+                            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" onclick="addPIC()" id="tombol-biasa">Add PIC</button>
+            </div>
+            <div>
+                <h3>Account Bank</h3>
+                <div id="accountBankFields">
+                    ${(vendor.accountBank || []).map(account => `
+                        <div>
+                            <label>Bank Code:</label>
+                            <input type="text" name="accountBank_bankCode[]" value="${account.bankCode || ''}" disabled>
+                            <label>Bank Name:</label>
+                            <input type="text" name="accountBank_bankName[]" value="${account.bankName || ''}" disabled>
+                            <label>Account Number:</label>
+                            <input type="text" name="accountBank_accountNumber[]" value="${account.accountNumber || ''}">
+                            <label>Account Name:</label>
+                            <input type="text" name="accountBank_accountName[]" value="${account.accountName || ''}">
+                            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" onclick="addAccountBank()" id="tombol-biasa">Add Account Bank</button>
+            </div>
+            <button type="submit" id="tombol-biasa">Save</button>
+            <button type="button" onclick="loadVendors()" id="tombol-error">Cancel</button>
+        </form>
+    `;
+
+    // Load active banks
+    fetch('/api/banks?status=ACTIVE', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(activeBanks => {
+        const accountBankFields = document.getElementById('accountBankFields');
+        const bankSelect = document.createElement('select');
+        bankSelect.id = 'bankSelect';
+        bankSelect.innerHTML = '<option value="">Select Bank</option>';
+        
+        activeBanks.forEach(bank => {
+            const option = document.createElement('option');
+            option.value = bank._id;
+            option.textContent = bank.bankDesc;
+            bankSelect.appendChild(option);
+        });
+
+        // Store for later use in addAccountBank
+        window.activeBanks = activeBanks;
+    })
+    .catch(error => {
+        console.error('Error loading banks:', error);
+        alert('Failed to load bank list.');
+    });
+}
+
+function submitEditVendor(event, vendorId) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const vendorData = Object.fromEntries(formData.entries());
+
+    // Remove empty fields
+    Object.keys(vendorData).forEach(key => {
+        if (vendorData[key] === '') {
+            delete vendorData[key];
+        }
+    });
+
+    fetch(`/api/vendors/${vendorId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(vendorData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            // Try to parse error message from server
+            return response.json().then(errorData => {
+                throw new Error(errorData.error || 'Failed to update vendor');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Vendor updated successfully');
+        loadVendors();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(`Error updating vendor: ${error.message}`);
+    });
+}
+
+function deleteVendor(vendorId) {
+    if (!confirm('Are you sure you want to delete this vendor?')) {
+        return;
+    }
+
+    fetch(`/api/vendors/${vendorId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to delete vendor');
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert('Vendor deleted successfully');
+        loadVendors();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(`Error deleting vendor: ${error.message}`);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadVendors();
+});

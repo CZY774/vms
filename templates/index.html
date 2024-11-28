@@ -5,211 +5,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proyek Akhir</title>
-    <style>
-        :root {
-            --background-color: rgb(255, 255, 255);
-            --border-color: rgb(0, 0, 0, 0.1);
-        }
-
-        body {
-            background-color: var(--background-color);
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 100 vh;
-            width: 100%;
-            margin: 0 px;
-            font-family: "rubik",sans-serif;
-        }
-
-        h1, h4, a, p, span {
-            font-family: "rubik",sans-serif;
-            color: black;
-        }
-
-        * {
-            box-sizing: border-box;
-            scrollbar-color: transparent transparent;
-            scrollbar-width: 0px;
-        }
-
-        * {
-            box-sizing: border-box;
-            scrollbar-color: transparent transparent;
-            scrollbar-width: 0px;
-        }
-        
-        *::-webkit-scrollbar {
-            width: 0;
-        }
-        
-        *::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        
-        *::-webkit-scrollbar-thumb {
-            background: transparent;
-            border: none;
-        }
-        
-        * {
-            -ms-overflow-style: none;
-        }
-
-        a {
-            text-decoration: none;
-        }
-
-        #login {
-            padding: 25px 20px 20vh 20px;
-        }
-
-        #tombol_login {
-            font-size: 1.2rem;
-            color: black;
-            text-decoration: none;
-            padding: 10px 20px;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        #tombol_login:hover {
-            background-color: lightseagreen;
-            color: white;
-        }
-
-        nav {
-            display: flex;
-            width: 100%;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        #nav-logo-section {
-            font-weight: bold;
-            font-size: 18pt;
-        }
-
-        nav > .nav-section {
-            padding: 1rem 2rem;
-            display: flex;
-            gap: 1rem;
-            border-left: 1px solid var(--border-color);
-            align-items: center;
-            justify-content: center;
-        }
-
-        #nav-logo-section {
-            flex-grow: 2;
-            justify-content: flex-start;
-        }
-
-        main {
-            flex-grow: 1;
-            position: relative;
-        }
-
-        article {
-            width: 100%;
-        }
-
-        .article-section {
-            align-items: center;
-            text-align: left;
-            position: relative;
-        }
-
-        .article-section2 {
-            align-items: center;
-            text-align: right;
-            position: relative;
-        }
-
-        #article-header {
-            font-size: 4rem;
-            padding-top: 30vh;
-            margin: 0px 20px 3vh 20px;
-            font-weight: 600;
-            letter-spacing: 5px;
-        }
-
-        #article-subheader {
-            font-size: 1.5rem;
-            font-weight: normal;
-            margin: 0px 20px 0px 20px;
-            padding-right: 30vw;
-        }
-
-        #author {
-            padding: 10vh 20px 10px 20px;
-        }
-
-        main > article > .article-title-section {
-            border-bottom: 1px solid var(--border-color);
-            padding-right: 10vh;
-            padding-bottom: 2vh;
-            padding-left: 20vh;
-            align-self: flex-end;
-        }
-
-        .question-answer-section
-        {
-            padding-left: 20vh;
-            padding-right: 60vh;
-            font-size: 18pt;
-            display: grid;
-            grid-template-columns: 3fr 1fr;
-            gap: 10vh;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .question-answer-section2
-        {
-            padding-left: 20vh;
-            padding-right: 60vh;
-            font-size: 18pt;
-            display: grid;
-            grid-template-columns: 1fr 3fr;
-            gap: 10vh;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .article-question-section {
-            font-size: 5vh;
-            font-weight: 300;
-        }
-
-        .article-answer-section {
-            font-size: 1.2rem;
-            font-weight: 100;
-        }
-
-        .article-answer-section2 {
-            font-size: 1.2rem;
-            font-weight: 100;
-        }
-
-        .footer
-        {
-            align-self: center;
-            text-align: center;
-            letter-spacing: 5px;
-        }
-
-        #branding-logo {
-            font-size: 1.5rem;
-            font-weight: 400;
-            letter-spacing: 5px;
-            flex-grow: 2;
-            justify-content: flex-start;
-            margin: 0px;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='/css/style.css') }}">
 </head>
 <body>
     <nav>
         <div id="branding-logo" class="nav-section">
-          <p id="branding-logo">CORNELVHUB</p>
+          <p id="branding-logo">CornelVHub</p>
         </div>
         <div id="nav-allmov-section" class="nav-section">
           <a href="https://www.instagram.com/corneliusyoga/" target="blank">INSTAGRAM</a>
@@ -227,7 +28,7 @@
                 <h1 id="article-header">CornelVHub</h1>
                 <h4 id="article-subheader">Your trusted solution for seamless vendor, bank, and branch management, empowering businesses to streamline operations with precision and efficiency.</h4>
                 <p id="login">
-                    <a id="tombol_login" href="{{ url_for('login') }}">Get Started</a>
+                    <a id="tombol-login" href="{{ url_for('login') }}">Get Started</a>
                 </p>
             </div>
 
@@ -252,8 +53,9 @@
             </div>
         </article>
     </main>
+    
     <p class="footer" id="author">
         by Cornelius Yoga - 672022204
-      </p>
+    </p>
 </body>
 </html>

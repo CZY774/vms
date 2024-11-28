@@ -2,17 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h1>Finance Dashboard</h1>
     <nav>
-        <ul>
-            <li><a href="/dashboard/finance/manage-banks">Manage Banks</a></li>
-            <li><a href="/dashboard/finance/manage-branches">Manage Branches</a></li>
-            <li><a href="/logout">Logout</a></li>
-        </ul>
+        <div id="branding-logo" class="nav-section">
+            <p id="branding-logo">CORNELVHUB</p>
+        </div>
+        <div id="nav-allmov-section" class="nav-section">
+            <a href="https://www.instagram.com/corneliusyoga/" target="blank">INSTAGRAM</a>
+        </div>
+        <div id="nav-social-section" class="nav-section">
+            <a href="https://www.linkedin.com/in/cornelius-yoga-783b6a291/" target="blank">LINKEDIN</a>
+        </div>
+        <div id="nav-signin-section" class="nav-section">
+            <a href="https://github.com/CZY774" target="blank">GITHUB</a>
+        </div>
     </nav>
+
+    <div class="dashboard-container">
+        <nav id="dashboard-nav">
+            <a href="/dashboard/finance/manage-banks">Manage Banks</a>
+            <a href="/dashboard/finance/manage-branches">Manage Branches</a>
+            <a href="/logout">Logout</a>
+        </nav>
+
+        <main class="dashboard-content">
+            <h1 id="dashboard-header">Finance Dashboard</h1>
+            <p>Welcome to the CornelVHub administrative dashboard. Use the navigation menu to access various management functions.</p>
+        </main>
+    </div>
+    
+    <p class="footer" id="author">
+        by Cornelius Yoga - 672022204
+    </p>
 </body>
 </html>

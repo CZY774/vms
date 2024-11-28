@@ -194,25 +194,25 @@ def dba_dashboard():
 @login_required
 @role_required(['DBA'])
 def manage_users():
-    return render_template('manage-users.html')
+    return render_template('dba-manage-users.html')
 
 @app.route('/dashboard/dba/manage-banks')
 @login_required
 @role_required(['DBA', 'Admin', 'Finance'])
 def manage_banks():
-    return render_template('manage-banks.html')
+    return render_template('dba-manage-banks.html')
 
 @app.route('/dashboard/dba/manage-branches')
 @login_required
 @role_required(['DBA', 'Admin', 'Finance'])
 def manage_branches():
-    return render_template('manage-branches.html')
+    return render_template('dba-manage-branches.html')
 
 @app.route('/dashboard/dba/manage-vendors')
 @login_required
 @role_required(['DBA', 'Admin', 'Vendor'])
 def manage_vendors():
-    return render_template('manage-vendors.html')
+    return render_template('dba-manage-vendors.html')
 
 # Admin Dashboard
 @app.route('/dashboard/admin')
@@ -224,25 +224,25 @@ def admin_dashboard():
 @login_required
 @role_required(['Admin'])
 def manage_users_admin():
-    return render_template('manage-users.html')
+    return render_template('admin-manage-users.html')
 
 @app.route('/dashboard/admin/manage-banks')
 @login_required
 @role_required(['Admin', 'Finance'])
 def manage_banks_admin():
-    return render_template('manage-banks.html')
+    return render_template('admin-manage-banks.html')
 
 @app.route('/dashboard/admin/manage-branches')
 @login_required
 @role_required(['Admin', 'Finance'])
 def manage_branches_admin():
-    return render_template('manage-branches.html')
+    return render_template('admin-manage-branches.html')
 
 @app.route('/dashboard/admin/manage-vendors')
 @login_required
 @role_required(['Admin', 'Vendor'])
 def manage_vendors_admin():
-    return render_template('manage-vendors.html')
+    return render_template('admin-manage-vendors.html')
 
 # Finance Dashboard
 @app.route('/dashboard/finance')
@@ -254,13 +254,13 @@ def finance_dashboard():
 @login_required
 @role_required(['Finance', 'Admin'])
 def manage_banks_finance():
-    return render_template('manage-banks.html')
+    return render_template('finance-manage-banks.html')
 
 @app.route('/dashboard/finance/manage-branches')
 @login_required
 @role_required(['Finance', 'Admin'])
 def manage_branches_finance():
-    return render_template('manage-branches.html')
+    return render_template('finance-manage-branches.html')
 
 # Vendor Dashboard
 @app.route('/dashboard/vendor')
@@ -272,7 +272,7 @@ def vendor_dashboard():
 @login_required
 @role_required(['Vendor', 'Admin'])
 def manage_vendors_vendor():
-    return render_template('manage-vendors.html')
+    return render_template('vendor-manage-vendors.html')
 
 # User Management API Routes (DBA Only)
 @app.route('/api/users', methods=['GET'])

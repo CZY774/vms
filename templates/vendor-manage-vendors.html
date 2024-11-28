@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CornelVHub - Admin Dashboard</title>
+    <title>Manage Vendors - CornelVHub</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <nav>
         <div id="branding-logo" class="nav-section">
-            <p id="branding-logo">CORNELVHUB</p>
+            <a href="{{ url_for('dba_dashboard') }}" id="branding-logo">CornelVHub</a>
         </div>
         <div id="nav-allmov-section" class="nav-section">
             <a href="https://www.instagram.com/corneliusyoga/" target="blank">INSTAGRAM</a>
@@ -22,24 +23,18 @@
             <a href="https://github.com/CZY774" target="blank">GITHUB</a>
         </div>
     </nav>
-
+    
     <div class="dashboard-container">
         <nav id="dashboard-nav">
-            <a href="/dashboard/admin/manage-users">Manage Users</a>
-            <a href="/dashboard/admin/manage-banks">Manage Banks</a>
-            <a href="/dashboard/admin/manage-branches">Manage Branches</a>
-            <a href="/dashboard/admin/manage-vendors">Manage Vendors</a>
+            <a href="/dashboard/vendor/manage-vendors">Manage Vendors</a>
             <a href="/logout">Logout</a>
         </nav>
         
-        <main class="dashboard-content">
-            <h1 id="dashboard-header">Admin Dashboard</h1>
-            <p>Welcome to the CornelVHub administrative dashboard. Use the navigation menu to access various management functions.</p>
+        <main id="includedContent">
+            <!-- Content will be loaded dynamically -->
         </main>
     </div>
     
-    <p class="footer" id="author">
-        by Cornelius Yoga - 672022204
-    </p>
+    <script src="{{ url_for('static', filename='js/manage-vendors.js') }}"></script>
 </body>
 </html>
