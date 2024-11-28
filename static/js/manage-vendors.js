@@ -3,6 +3,283 @@ let branchOfficeIndex = 0;
 let PICIndex = 0;
 let accountBankIndex = 0;
 
+function createVendorDetailsModal(vendor) {
+    // Create a modal dialog with all vendor details
+    const modal = document.createElement('div');
+    modal.id = 'vendorDetailsModal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '1000';
+
+    const modalContent = document.createElement('div');
+    modalContent.style.backgroundColor = 'white';
+    modalContent.style.padding = '20px';
+    modalContent.style.borderRadius = '8px';
+    modalContent.style.width = '80%';
+    modalContent.style.maxHeight = '80%';
+    modalContent.style.overflowY = 'auto';
+
+    // Detailed vendor information HTML
+    modalContent.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Vendor Details</h2>
+            <button onclick="document.body.removeChild(document.getElementById('vendorDetailsModal'))" 
+                    id="tombol-error">Close
+            </button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <h3>Basic Information</h3>
+                <p><strong>Vendor ID:</strong> ${vendor._id || 'N/A'}</p>
+                <p><strong>Partner Type:</strong> ${vendor.partnerType || 'N/A'}</p>
+                <p><strong>Vendor Name:</strong> ${vendor.vendorName || 'N/A'}</p>
+                <p><strong>Unit Usaha:</strong> ${vendor.unitUsaha || 'N/A'}</p>
+                <p><strong>Address:</strong> ${vendor.address || 'N/A'}</p>
+                <p><strong>Country:</strong> ${vendor.country || 'N/A'}</p>
+                <p><strong>Province:</strong> ${vendor.province || 'N/A'}</p>
+                <p><strong>Phone:</strong> ${vendor.noTelp || 'N/A'}</p>
+                <p><strong>Email:</strong> ${vendor.emailCompany || 'N/A'}</p>
+                <p><strong>Website:</strong> ${vendor.website || 'N/A'}</p>
+                <p><strong>NPWP:</strong> ${vendor.NPWP || 'N/A'}</p>
+                <p><strong>Active Status:</strong> ${vendor.activeStatus === 'Y' ? 'Active' : 'Inactive'}</p>
+            </div>
+            <div>
+                <h3>PIC Information</h3>
+                <p><strong>Name PIC:</strong> ${vendor.namePIC || 'N/A'}</p>
+                <p><strong>Phone PIC:</strong> ${vendor.noTelpPIC || 'N/A'}</p>
+                <p><strong>Email PIC:</strong> ${vendor.emailPIC || 'N/A'}</p>
+                <p><strong>Position PIC:</strong> ${vendor.positionPIC || 'N/A'}</p>
+
+                <h3>Additional PICs</h3>
+                ${(vendor.PIC || []).map(pic => `
+                    <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
+                        <p><strong>Username:</strong> ${pic.username || 'N/A'}</p>
+                        <p><strong>Name:</strong> ${pic.name || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${pic.email || 'N/A'}</p>
+                        <p><strong>Phone:</strong> ${pic.noTelp || 'N/A'}</p>
+                    </div>
+                `).join('') || 'No additional PICs'}
+
+                <h3>Supporting Equipment</h3>
+                ${(vendor.supportingEquipment || []).map(equipment => `
+                    <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
+                        <p><strong>Tool Type:</strong> ${equipment.toolType || 'N/A'}</p>
+                        <p><strong>Count:</strong> ${equipment.count || 'N/A'}</p>
+                        <p><strong>Merk:</strong> ${equipment.merk || 'N/A'}</p>
+                        <p><strong>Condition:</strong> ${equipment.condition || 'N/A'}</p>
+                    </div>
+                `).join('') || 'No supporting equipment'}
+
+                <h3>Branch Offices</h3>
+                ${(vendor.branchOffice || []).map(branch => `
+                    <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
+                        <p><strong>Branch Name:</strong> ${branch.branchName || 'N/A'}</p>
+                        <p><strong>Location:</strong> ${branch.location || 'N/A'}</p>
+                        <p><strong>Address:</strong> ${branch.address || 'N/A'}</p>
+                        <p><strong>Country:</strong> ${branch.country || 'N/A'}</p>
+                        <p><strong>Phone:</strong> ${branch.noTelp || 'N/A'}</p>
+                    </div>
+                `).join('') || 'No branch offices'}
+
+                <h3>Bank Accounts</h3>
+                ${(vendor.accountBank || []).map(account => `
+                    <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
+                        <p><strong>Bank:</strong> ${account.bankName || 'N/A'}</p>
+                        <p><strong>Account Number:</strong> ${account.accountNumber || 'N/A'}</p>
+                        <p><strong>Account Name:</strong> ${account.accountName || 'N/A'}</p>
+                    </div>
+                `).join('') || 'No bank accounts'}
+            </div>
+        </div>
+        <div style="margin-top: 20px;">
+            <h3>Change History</h3>
+            <p><strong>Created By:</strong> ${vendor.change?.createUser || 'N/A'}</p>
+            <p><strong>Created Date:</strong> ${vendor.change?.createDate || 'N/A'}</p>
+            <p><strong>Updated By:</strong> ${vendor.change?.updateUser || 'N/A'}</p>
+            <p><strong>Updated Date:</strong> ${vendor.change?.updateDate || 'N/A'}</p>
+        </div>
+    `;
+
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+}
+
+function createEditVendorModal(vendor) {
+    // Create modal structure
+    const modal = document.createElement('div');
+    modal.id = 'editVendorModal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '1000';
+
+    const modalContent = document.createElement('div');
+    modalContent.style.backgroundColor = 'white';
+    modalContent.style.padding = '20px';
+    modalContent.style.borderRadius = '8px';
+    modalContent.style.width = '80%';
+    modalContent.style.maxHeight = '80%';
+    modalContent.style.overflowY = 'auto';
+
+    // Prepare dynamic fields HTML generators
+    const generateSupportingEquipmentFields = (equipment = {}) => `
+        <div class="dynamic-field">
+            <label>Tool Type:</label>
+            <input type="text" name="supportingEquipment_toolType[]" value="${equipment.toolType || ''}">
+            <label>Count:</label>
+            <input type="number" name="supportingEquipment_count[]" value="${equipment.count || ''}">
+            <label>Merk:</label>
+            <input type="text" name="supportingEquipment_merk[]" value="${equipment.merk || ''}">
+            <label>Condition:</label>
+            <input type="text" name="supportingEquipment_condition[]" value="${equipment.condition || ''}">
+            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+        </div>
+    `;
+
+    const generateBranchOfficeFields = (branch = {}) => `
+        <div class="dynamic-field">
+            <label>Branch Name:</label>
+            <input type="text" name="branchOffice_branchName[]" value="${branch.branchName || ''}">
+            <label>Location:</label>
+            <input type="text" name="branchOffice_location[]" value="${branch.location || ''}">
+            <label>Address:</label>
+            <input type="text" name="branchOffice_address[]" value="${branch.address || ''}">
+            <label>Country:</label>
+            <input type="text" name="branchOffice_country[]" value="${branch.country || ''}">
+            <label>Phone:</label>
+            <input type="text" name="branchOffice_noTelp[]" value="${branch.noTelp || ''}">
+            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+        </div>
+    `;
+
+    const generatePICFields = (pic = {}) => `
+        <div class="dynamic-field">
+            <label>Username:</label>
+            <input type="text" name="PIC_username[]" value="${pic.username || ''}">
+            <label>Name:</label>
+            <input type="text" name="PIC_name[]" value="${pic.name || ''}">
+            <label>Email:</label>
+            <input type="email" name="PIC_email[]" value="${pic.email || ''}">
+            <label>Phone:</label>
+            <input type="text" name="PIC_noTelp[]" value="${pic.noTelp || ''}">
+            <button type="button" onclick="this.parentElement.remove()" id="tombol-error">Remove</button>
+        </div>
+    `;
+
+    // Modal content HTML
+    modalContent.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Edit Vendor</h2>
+            <button onclick="document.body.removeChild(document.getElementById('editVendorModal'))" id="tombol-error">Close</button>
+        </div>
+        <form id="editVendorForm" onsubmit="submitEditVendor(event, '${vendor._id}')">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>Basic Information</h3>
+                    <div>
+                        <label>Vendor Name:</label>
+                        <input type="text" name="vendorName" value="${vendor.vendorName || ''}">
+                    </div>
+                    <div>
+                        <label>Unit Usaha:</label>
+                        <input type="text" name="unitUsaha" value="${vendor.unitUsaha || ''}">
+                    </div>
+                    <div>
+                        <label>Address:</label>
+                        <input type="text" name="address" value="${vendor.address || ''}">
+                    </div>
+                    <div>
+                        <label>Country:</label>
+                        <input type="text" name="country" value="${vendor.country || ''}">
+                    </div>
+                    <div>
+                        <label>Phone:</label>
+                        <input type="text" name="noTelp" value="${vendor.noTelp || ''}">
+                    </div>
+                    <div>
+                        <label>Email:</label>
+                        <input type="email" name="emailCompany" value="${vendor.emailCompany || ''}">
+                    </div>
+                    <div>
+                        <label>Active Status:</label>
+                        <select name="activeStatus">
+                            <option value="Y" ${vendor.activeStatus === 'Y' ? 'selected' : ''}>Active</option>
+                            <option value="N" ${vendor.activeStatus === 'N' ? 'selected' : ''}>Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <h3>Additional Information</h3>
+                    <div>
+                        <h4>Supporting Equipment</h4>
+                        <div id="equipmentFields">
+                            ${(vendor.supportingEquipment || []).map(generateSupportingEquipmentFields).join('')}
+                        </div>
+                        <button type="button" onclick="addSupportingEquipment()" id="tombol-biasa">Add Equipment</button>
+                    </div>
+                    <div>
+                        <h4>Branch Offices</h4>
+                        <div id="branchOfficeFields">
+                            ${(vendor.branchOffice || []).map(generateBranchOfficeFields).join('')}
+                        </div>
+                        <button type="button" onclick="addBranchOffice()" id="tombol-biasa">Add Branch Office</button>
+                    </div>
+                    <div>
+                        <h4>PICs</h4>
+                        <div id="PICFields">
+                            ${(vendor.PIC || []).map(generatePICFields).join('')}
+                        </div>
+                        <button type="button" onclick="addPIC()" id="tombol-biasa">Add PIC</button>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="submit" id="tombol-biasa">Save Changes</button>
+            </div>
+        </form>
+    `;
+
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+}
+
+function viewVendorDetails(vendorId) {
+    // Fetch full vendor details
+    fetch(`/api/vendors/${vendorId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to fetch vendor details');
+        }
+        return response.json();
+    })
+    .then(vendor => {
+        createVendorDetailsModal(vendor);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(`Error fetching vendor details: ${error.message}`);
+    });
+}
+
 function loadVendors() {
     const includedContent = document.getElementById('includedContent');
     fetch('/api/vendors', {
@@ -21,86 +298,44 @@ function loadVendors() {
     .then(data => {
         const vendors = Array.isArray(data) ? data : [];
         
-        const includedContent = document.getElementById('includedContent');
         const tableBody = vendors.map(vendor => `
             <tr>
                 <td>${vendor._id || ''}</td>
-                <td>${vendor.partnerType || ''}</td>
                 <td>${vendor.vendorName || ''}</td>
                 <td>${vendor.unitUsaha || ''}</td>
                 <td>${vendor.address || ''}</td>
                 <td>${vendor.country || ''}</td>
-                <td>${vendor.province || ''}</td>
                 <td>${vendor.noTelp || ''}</td>
                 <td>${vendor.emailCompany || ''}</td>
-                <td>${vendor.website || ''}</td>
-                <td>${vendor.namePIC || ''}</td>
-                <td>${vendor.noTelpPIC || ''}</td>
-                <td>${vendor.emailPIC || ''}</td>
-                <td>${vendor.positionPIC || ''}</td>
-                <td>${vendor.NPWP || ''}</td>
-                <td>${vendor.activeStatus === 'Y' ? 'Active' : 'Inactive'}</td>
-                <td>
-                    ${vendor.PIC?.map(PIC => `
-                    <p>${PIC.name || ''} (${PIC.email || ''}, ${PIC.noTelp || ''})</p>
-                    `).join('') || ''}
-                </td>
-                <td>
-                    ${vendor.supportingEquipment?.map(equipment => `
-                        <p>${equipment.toolType || ''} - ${equipment.count || ''} (${equipment.merk || ''})</p>
-                    `).join('') || ''}
-                </td>
-                <td>
-                    ${vendor.branchOffice?.map(branch => `
-                        <p>${branch.branchName || ''} - ${branch.location || ''}</p>
-                    `).join('') || ''}
-                </td>
-                <td>
-                    ${vendor.accountBank?.map(account => `
-                        <p>${account.bankName || ''} - ${account.accountNumber || ''}</p>
-                    `).join('') || ''}
-                </td>
-                <td>${vendor.change?.createDate || ''}</td>
                 <td>${vendor.change?.createUser || ''}</td>
-                <td>${vendor.change?.updateDate || ''}</td>
+                <td>${vendor.change?.createDate || ''}</td>
                 <td>${vendor.change?.updateUser || ''}</td>
+                <td>${vendor.change?.updateDate || ''}</td>
                 <td>
+                    <button onclick="viewVendorDetails('${vendor._id}')" id="tombol-biasa">View Details</button>
                     <button onclick="editVendor('${vendor._id}')" id="tombol-biasa">Edit</button>
-                    <button onclick="deleteVendor('${vendor._id}')" id="tombol-biasa">Delete</button>
+                    <button onclick="deleteVendor('${vendor._id}')" id="tombol-error">Delete</button>
                 </td>
             </tr>
         `).join('');
 
         includedContent.innerHTML = `
             <h1>Manage Vendors</h1>
-            <button onclick="showAddVendorForm()" id="tombol-biasa">Add New Vendor</button>
+            <button onclick="showAddVendorModal()" id="tombol-biasa">Add New Vendor</button>
             <table border="1">
                 <thead>
                     <tr>
                         <th>Vendor ID</th>
-                        <th>Partner Type</th>
                         <th>Vendor Name</th>
                         <th>Unit Usaha</th>
                         <th>Address</th>
                         <th>Country</th>
-                        <th>Province</th>
                         <th>Phone</th>
                         <th>Email</th>
-                        <th>Website</th>
-                        <th>Name PIC</th>
-                        <th>Phone PIC</th>
-                        <th>Email PIC</th>
-                        <th>Position PIC</th>
-                        <th>NPWP</th>
-                        <th>Active Status</th>
-                        <th>PIC</th>
-                        <th>Supporting Equipment</th>
-                        <th>Branch Offices</th>
-                        <th>Account Bank</th>
-                        <th>Create Date</th>
                         <th>Create User</th>
-                        <th>Update Date</th>
+                        <th>Create Date</th>
                         <th>Update User</th>
+                        <th>Update Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -333,9 +568,163 @@ function parseArrayFields(formData, keyPrefix) {
 }
 
 // Submit Vendor Form
+function showAddVendorModal() {
+    // Create modal container
+    const modal = document.createElement('div');
+    modal.id = 'addVendorModal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '1000';
+    modal.style.overflowY = 'auto';
+    modal.style.padding = '20px 0';
+
+    // Modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.backgroundColor = 'white';
+    modalContent.style.padding = '20px';
+    modalContent.style.borderRadius = '8px';
+    modalContent.style.width = '80%';
+    modalContent.style.maxWidth = '800px';
+    modalContent.style.maxHeight = '90%';
+    modalContent.style.overflowY = 'auto';
+
+    // Modal HTML content
+    modalContent.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Add New Vendor</h2>
+            <button onclick="document.body.removeChild(document.getElementById('addVendorModal'))" id="tombol-error">Close</button>
+        </div>
+
+        <form id="addVendorForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>Basic Information</h3>
+                    <div style="display: grid; gap: 10px;">
+                        <div>
+                            <label>Vendor ID:</label>
+                            <input type="text" id="vendor_id" name="_id" required style="width: 100%;">
+                        </div>
+                        <div>
+                            <label>Partner Type:</label>
+                            <input type="text" id="partner_type" name="partnerType" required style="width: 100%;">
+                        </div>
+                        <div>
+                            <label>Vendor Name:</label>
+                            <input type="text" id="vendor_name" name="vendorName" required style="width: 100%;">
+                        </div>
+                        <div>
+                            <label>Unit Usaha:</label>
+                            <input type="text" id="unit_usaha" name="unitUsaha" required style="width: 100%;">
+                        </div>
+                        <div>
+                            <label>Address:</label>
+                            <input type="text" id="address" name="address" required style="width: 100%;">
+                        </div>
+                        <div>
+                            <label>Country:</label>
+                            <input type="text" id="country" name="country" required style="width: 100%;">
+                        </div>
+                        <div>
+                            <label>Phone:</label>
+                            <input type="text" id="no_telp" name="noTelp" required style="width: 100%;">
+                        </div>
+                        <div>
+                            <label>Email:</label>
+                            <input type="email" id="email_company" name="emailCompany" required style="width: 100%;">
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div>
+                        <h3>Additional Information</h3>
+                        <div style="display: grid; gap: 10px;">
+                            <div>
+                                <h4>Supporting Equipment 
+                                    <button type="button" onclick="addSupportingEquipment()" id="tombol-biasa" style="margin-left: 10px;">Add</button>
+                                </h4>
+                                <div id="equipmentFields" style="max-height: 200px; overflow-y: auto;"></div>
+                            </div>
+                            
+                            <div>
+                                <h4>Branch Offices 
+                                    <button type="button" onclick="addBranchOffice()" id="tombol-biasa" style="margin-left: 10px;">Add</button>
+                                </h4>
+                                <div id="branchOfficeFields" style="max-height: 200px; overflow-y: auto;"></div>
+                            </div>
+                            
+                            <div>
+                                <h4>PICs 
+                                    <button type="button" onclick="addPIC()" id="tombol-biasa" style="margin-left: 10px;">Add</button>
+                                </h4>
+                                <div id="PICFields" style="max-height: 200px; overflow-y: auto;"></div>
+                            </div>
+                            
+                            <div>
+                                <h4>Bank Accounts 
+                                    <button type="button" onclick="addAccountBank()" id="tombol-biasa" style="margin-left: 10px;">Add</button>
+                                </h4>
+                                <div id="accountBankFields" style="max-height: 200px; overflow-y: auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="button" onclick="submitNewVendor(event)" id="tombol-biasa">Save Vendor</button>
+                <button type="button" onclick="document.body.removeChild(document.getElementById('addVendorModal'))" id="tombol-error">Cancel</button>
+            </div>
+        </form>
+    `;
+
+    // Append modal to body
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Load active banks
+    fetch('/api/banks?status=ACTIVE', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(activeBanks => {
+        const bankSelect = document.createElement('select');
+        bankSelect.id = 'bankSelect';
+        bankSelect.innerHTML = '<option value="">Select Bank</option>';
+        
+        activeBanks.forEach(bank => {
+            const option = document.createElement('option');
+            option.value = bank._id;
+            option.textContent = bank.bankDesc;
+            bankSelect.appendChild(option);
+        });
+
+        // Store for later use in addAccountBank
+        window.activeBanks = activeBanks;
+    })
+    .catch(error => {
+        console.error('Error loading banks:', error);
+        alert('Failed to load bank list.');
+    });
+}
+
+// Modify the existing functions to work with the modal
 function submitNewVendor(event) {
-    event.preventDefault();
-    const form = event.target;
+    const form = document.getElementById('addVendorForm');
     const formData = new FormData(form);
 
     // Create vendor data object with required fields
@@ -350,21 +739,21 @@ function submitNewVendor(event) {
         emailCompany: document.getElementById('email_company').value,
     };
 
-    // Parse dynamic fields
+    // Parse dynamic fields (same as before)
     vendorData.supportingEquipment = parseArrayFields(formData, "supportingEquipment") || [];
     vendorData.branchOffice = parseArrayFields(formData, "branchOffice") || [];
     vendorData.PIC = parseArrayFields(formData, "PIC") || [];
     
-    // Handle Account Banks - use bank code directly
+    // Handle Account Banks
     vendorData.accountBank = [];
     const accountBankFields = document.querySelectorAll('#accountBankFields .dynamic-field');
-    accountBankFields.forEach((field, index) => {
+    accountBankFields.forEach((field) => {
         const bankSelect = field.querySelector('select');
         const accountNumber = field.querySelector('input[name^="accountBank_accountNumber"]');
         const accountName = field.querySelector('input[name^="accountBank_accountName"]');
         
         vendorData.accountBank.push({
-            bankId: bankSelect.value,  // This will be the bank code like "BBCA"
+            bankId: bankSelect.value,
             accountNumber: accountNumber.value,
             accountName: accountName.value
         });
@@ -388,16 +777,15 @@ function submitNewVendor(event) {
     })
     .then(data => {
         alert("Vendor created successfully");
+        // Remove modal
+        document.body.removeChild(document.getElementById('addVendorModal'));
+        // Reload vendors list
         loadVendors();
+        // Reset indexes
         equipmentIndex = 0;
         branchOfficeIndex = 0;
         PICIndex = 0;
         accountBankIndex = 0;
-        // Clear dynamic fields
-        document.getElementById('equipmentFields').innerHTML = '';
-        document.getElementById('branchOfficeFields').innerHTML = '';
-        document.getElementById('PICFields').innerHTML = '';
-        document.getElementById('accountBankFields').innerHTML = '';
     })
     .catch(error => {
         console.error("Error:", error.message);
@@ -424,7 +812,7 @@ function editVendor(vendorId) {
         return response.json();
     })
     .then(vendor => {
-        showEditVendorForm(vendor);
+        createEditVendorModal(vendor);
     })
     .catch(error => {
         console.error('Error:', error);

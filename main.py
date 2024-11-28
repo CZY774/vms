@@ -21,6 +21,8 @@ CORS(app, resources={
     }
 })
 
+connRedis = redis.StrictRedis(host="10.85.49.147", port=6379, db=0, password="b56e784c-49a7-4adf-be06-7192ca6ea73e")
+
 # Redis setup
 redis_client = redis.Redis(
     host=os.getenv('REDIS_HOST', 'localhost'),
@@ -28,6 +30,24 @@ redis_client = redis.Redis(
     db=int(os.getenv('REDIS_DB', 0)),
     password=os.getenv('REDIS_PASSWORD', None)
 )
+
+@app.route("/insertRedis", methods=['POST'])
+def insertRedis():
+    data = request.get_json()
+    key = data.get('key')
+    value = data.get('value')
+    resultInsert = connRedis.set(name=key, value=value)
+    if resultInsert:
+        return jsonify({'status': True, 'data': {key: value}})
+    return jsonify({'status': False, 'data': None})
+
+@app.route("/getRedisData")
+def getRedis():
+    param = request.args.get('param')
+    resultGetRedis = connRedis.get(param)
+    if resultGetRedis:
+        return jsonify({'status': True, 'data': resultGetRedis.decode('utf-8')})
+    return jsonify({'status': False, 'data': None}) 
 
 # Security Functions
 def sanitize_input(data):

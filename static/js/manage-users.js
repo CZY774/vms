@@ -29,7 +29,7 @@ function loadUsers() {
             .then(users => {
                 let html = `
                     <h1>Manage Users</h1>
-                    <button id="addUserBtn" onclick="showAddUserForm()" id="tombol-biasa">Add New User</button>
+                    <button onclick="showAddUserForm()" id="tombol-biasa">Add New User</button>
                     <table border="1">
                         <thead>
                             <tr>

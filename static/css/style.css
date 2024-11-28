@@ -21,6 +21,15 @@ h1, h4, a, p, span {
     color: black;
 }
 
+.dashboard-content::-webkit-scrollbar, #dashboard-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.dashboard-content, #dashboard-nav {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
 * {
     box-sizing: border-box;
     scrollbar-color: transparent transparent;
@@ -344,6 +353,10 @@ main > article > .article-title-section {
     flex-direction: column;
     border-right: 1px solid var(--border-color);
     width: 250px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 #dashboard-nav a {
@@ -366,11 +379,14 @@ main > article > .article-title-section {
 .dashboard-container {
     display: flex;
     height: 100vh;
+    overflow: hidden;
 }
 
 .dashboard-content {
     flex-grow: 1;
     padding: 20px;
+    overflow-y: auto;
+    height: 100vh;
 }
 
 #dashboard-header {
