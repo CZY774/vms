@@ -2,19 +2,150 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DBA Dashboard</title>
+    <title>CornelVHub - DBA Dashboard</title>
+    <style>
+        :root {
+            --background-color: rgb(255, 255, 255);
+            --border-color: rgb(0, 0, 0, 0.1);
+        }
+
+        body {
+            background-color: var(--background-color);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            margin: 0;
+            font-family: "rubik", sans-serif;
+        }
+
+        h1, h4, a, p, span, li {
+            font-family: "rubik", sans-serif;
+            color: black;
+        }
+
+        * {
+            box-sizing: border-box;
+            scrollbar-color: transparent transparent;
+            scrollbar-width: 0px;
+        }
+
+        *::-webkit-scrollbar {
+            width: 0;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background: transparent;
+            border: none;
+        }
+
+        * {
+            -ms-overflow-style: none;
+        }
+
+        a {
+            text-decoration: none;
+            transition: color 0.3s, background-color 0.3s;
+        }
+
+        nav {
+            display: flex;
+            width: 100%;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav > .nav-section {
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+            border-left: 1px solid var(--border-color);
+            align-items: center;
+            justify-content: center;
+        }
+
+        #branding-logo {
+            font-size: 1.5rem;
+            font-weight: 400;
+            letter-spacing: 5px;
+            flex-grow: 2;
+            justify-content: flex-start;
+            margin: 0px;
+        }
+
+        #dashboard-nav {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            width: 250px;
+        }
+
+        #dashboard-nav a {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            color: black;
+        }
+
+        #dashboard-nav a:hover {
+            background-color: lightseagreen;
+            color: white;
+        }
+
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .dashboard-content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        #dashboard-header {
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: 5px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>DBA Dashboard</h1>
     <nav>
-        <ul>
-            <li><a href="/dashboard/dba/manage-users">Manage Users</a></li>
-            <li><a href="/dashboard/dba/manage-banks">Manage Banks</a></li>
-            <li><a href="/dashboard/dba/manage-branches">Manage Branches</a></li>
-            <li><a href="/dashboard/dba/manage-vendors">Manage Vendors</a></li>
-            <li><a href="/logout">Logout</a></li>
-        </ul>
+        <div id="branding-logo" class="nav-section">
+          <p id="branding-logo">CORNELVHUB</p>
+        </div>
+        <div id="nav-allmov-section" class="nav-section">
+          <a href="https://www.instagram.com/corneliusyoga/" target="blank">INSTAGRAM</a>
+        </div>
+        <div id="nav-social-section" class="nav-section">
+          <a href="https://www.linkedin.com/in/cornelius-yoga-783b6a291/" target="blank">LINKEDIN</a>
+        </div>
+        <div id="nav-signin-section" class="nav-section">
+          <a href="https://github.com/CZY774" target="blank">GITHUB</a>
+        </div>
     </nav>
+
+    <div class="dashboard-container">
+        <nav id="dashboard-nav">
+            <a href="/dashboard/dba/manage-users">Manage Users</a>
+            <a href="/dashboard/dba/manage-banks">Manage Banks</a>
+            <a href="/dashboard/dba/manage-branches">Manage Branches</a>
+            <a href="/dashboard/dba/manage-vendors">Manage Vendors</a>
+            <a href="/logout">Logout</a>
+        </nav>
+
+        <main class="dashboard-content">
+            <h1 id="dashboard-header">DBA Dashboard</h1>
+            <p>Welcome to the CornelVHub administrative dashboard. Use the navigation menu to access various management functions.</p>
+        </main>
+    </div>
 </body>
 </html>

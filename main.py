@@ -12,7 +12,7 @@ from functools import wraps
 from bcrypt import gensalt, hashpw
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = "ProyekAkhirKapitaSelektaSoftwareEngineeringAlfamart"
 CORS(app, resources={
     r"/api/*": {
         "origins": ["http://localhost:5000", "https://your-production-domain.com"],
@@ -124,7 +124,9 @@ def login():
                 {"$set": {"last_login": datetime.utcnow()}}
             )
 
-            return redirect(url_for(f"{user['role'].lower()}_dashboard"))
+            # Kirim URL dashboard sesuai role dalam JSON
+            redirect_url = url_for(f"{user['role'].lower()}_dashboard")
+            return jsonify({"success": True, "redirectUrl": redirect_url}), 200
         
         return jsonify({"success": False, "message": "Invalid credentials"}), 401
         
@@ -138,7 +140,7 @@ def logout():
     if session_id:
         redis_client.delete(session_id)
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('home'))
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
@@ -647,8 +649,7 @@ def create_vendor():
         print("Received data:", data)  # Tambahkan log
         
         required_fields = [
-            "vendorname", "unitusaha", "emailcompany", "address", 
-            "country", "province", "notelp", "activestatus"
+            "partnerType", "vendorName", "unitUsaha", "address","emailCompany", "country", "noTelp"
         ]
         
         # Validasi field wajib
@@ -671,46 +672,53 @@ def create_vendor():
         
         # Insert vendor
         vendor = {
-            "vendorname": data["vendorname"],
-            "unitusaha": data["unitusaha"],
-            "emailcompany": data["emailcompany"],
-            "address": data["address"],
-            "country": data["country"],
-            "province": data["province"],
-            "notelp": data["notelp"],
-            "activestatus": data.get("activestatus", "Y"),
-            "accountBank": data.get("accountBank", []),
+            "_id": data.get("_id"),  # optional field
+            "partnerType": data.get("partnerType", ""),  # optional field
+            "vendorName": data.get("vendorName", ""),  # sesuaikan dengan nama field di backend
+            "unitUsaha": data.get("unitUsaha", ""),  # sesuaikan dengan nama field di backend
+            "address": data.get("address", ""),
+            "country": data.get("country", ""),
+            "province": data.get("province", ""),
+            "noTelp": data.get("noTelp", ""),
+            "emailCompany": data.get("emailCompany", ""),  # sesuaikan dengan nama field di backend
+            "website": data.get("website", ""),
+            "namePIC": data.get("namePic", ""),
+            "noTelpPIC": data.get("noTelpPIC", ""),
+            "emailPIC": data.get("emailPIC", ""),
+            "positionPIC": data.get("positionPIC", ""),
+            "NPWP": data.get("NPWP", ""),
+            "activeStatus":  "Y",
+            "PIC": data.get("PIC", []),
             "supportingEquipment": data.get("supportingEquipment", []),
             "branchOffice": data.get("branchOffice", []),
-            "pic": data.get("pic", []),
+            "accountBank": data.get("accountBank", []),
             "change": {
-                "createuser": session.get('username'),
-                "createdate": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-                "updateuser": "",
-                "updatedate": ""
+                "createUser": session.get('username'),
+                "createDate": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                "updateUser": "",
+                "updateDate": ""
             }
         }
         result = vendors_collection.insert_one(vendor)
         return jsonify({"message": "Vendor created successfully", "_id": str(result.inserted_id)}), 201
     except Exception as e:
-        print("Server error:", str(e))  # Log error
+        print("Server error:", str(e))
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/vendors/<vendor_id>', methods=['GET'])
 @role_required(['DBA', 'Admin', 'Vendor'])
 def get_vendor(vendor_id):
     try:
-        # Ensure vendor_id is a valid ObjectId
-        vendor = vendors_collection.find_one({"_id": ObjectId(vendor_id)})
+        vendor = vendors_collection.find_one({"_id": vendor_id})
+        
         if not vendor:
             return jsonify({"error": "Vendor not found"}), 404
         
-        vendor['_id'] = str(vendor['_id'])
-        return jsonify(vendor)
+        return jsonify(vendor), 200
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+        app.logger.error(f"Error fetching vendor: {str(e)}")
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 @app.route('/api/vendors/<vendor_id>', methods=['PUT'])
 @role_required(['DBA', 'Admin', 'Vendor'])
@@ -719,8 +727,8 @@ def update_vendor(vendor_id):
         user_role = session.get('role')
         user_email = session.get('email')
         
-        # Ensure vendor_id is a valid ObjectId
-        vendor = vendors_collection.find_one({"_id": ObjectId(vendor_id)})
+        # Find vendor by _id string
+        vendor = vendors_collection.find_one({"_id": vendor_id})
         if not vendor:
             return jsonify({"error": "Vendor not found"}), 404
         
@@ -728,41 +736,119 @@ def update_vendor(vendor_id):
             return jsonify({"error": "Access denied"}), 403
         
         data = sanitize_input(request.get_json())
+        print("Received data:", data)
+        
+        # Validate mandatory fields
+        mandatory_fields = ["partnerType", "vendorName", "unitUsaha", "country", "noTelp", "emailCompany"]
+        for field in mandatory_fields:
+            if field not in data or not data[field]:
+                return jsonify({"error": f"Mandatory field {field} is missing"}), 400
+        
+        # Process arrays from nested form data
+        PICs = []
+        for i in range(len(vendor.get('PIC', []))):
+            PIC = {
+                'username': data.get(f'PIC_username[{i}]'),
+                'name': data.get(f'PIC_name[{i}]'),
+                'email': data.get(f'PIC_email[{i}]'),
+                'noTelp': data.get(f'PIC_noTelp[{i}]')
+            }
+            # Only add if all fields are not None
+            if all(PIC.values()):
+                PICs.append(PIC)
+        
+        supporting_equipment = []
+        for i in range(len(vendor.get('supportingEquipment', []))):
+            equipment = {
+                'toolType': data.get(f'supportingEquipment_toolType[{i}]'),
+                'count': data.get(f'supportingEquipment_count[{i}]'),
+                'merk': data.get(f'supportingEquipment_merk[{i}]'),
+                'condition': data.get(f'supportingEquipment_condition[{i}]')
+            }
+            # Only add if all fields are not None
+            if all(equipment.values()):
+                supporting_equipment.append(equipment)
+        
+        branch_offices = []
+        for i in range(len(vendor.get('branchOffice', []))):
+            branch = {
+                'branchName': data.get(f'branchOffice_branchName[{i}]'),
+                'location': data.get(f'branchOffice_location[{i}]'),
+                'address': data.get(f'branchOffice_address[{i}]'),
+                'country': data.get(f'branchOffice_country[{i}]'),
+                'noTelp': data.get(f'branchOffice_noTelp[{i}]'),
+                'website': data.get(f'branchOffice_website[{i}]'),
+                'email': data.get(f'branchOffice_email[{i}]')
+            }
+            # Only add if all fields are not None
+            if all(branch.values()):
+                branch_offices.append(branch)
+        
+        account_banks = []
+        for i in range(len(vendor.get('accountBank', []))):
+            bank = {
+                'accountNumber': data.get(f'accountBank_accountNumber[{i}]'),
+                'accountName': data.get(f'accountBank_accountName[{i}]')
+            }
+            # Only add if all fields are not None
+            if all(bank.values()):
+                account_banks.append(bank)
+        
+        # Validasi bank - use string comparison instead of ObjectId
+        for account in account_banks:
+            bank_id = account.get("bankId")
+            if not bank_id:
+                continue
+            bank_exists = banks_collection.find_one({"_id": bank_id, "activeStatus": "Y"})
+            if not bank_exists:
+                error_message = f"Invalid bank selected: {bank_id}"
+                print(error_message)  # Log error
+                return jsonify({"error": error_message}), 400
         
         # Prepare update document
         update_fields = {
-            "vendorName": data.get("vendorName"),
-            "unitUsaha": data.get("unitUsaha"),
-            "emailCompany": data.get("emailCompany"),
-            "address": data.get("address"),
-            "country": data.get("country"),
-            "province": data.get("province"),
-            "noTelp": data.get("noTelp"),
-            "activeStatus": data.get("activeStatus"),
-            "accountBank": data.get("accountBank"),
-            "supportingEquipment": data.get("supportingEquipment"),
-            "branchOffice": data.get("branchOffice"),
-            "pic": data.get("pic"),
+            "partnerType": data.get("partnerType", vendor.get("partnerType")),
+            "vendorName": data.get("vendorName", vendor.get("vendorName")),
+            "unitUsaha": data.get("unitUsaha", vendor.get("unitUsaha")),
+            "address": data.get("address", vendor.get("address")),
+            "country": data.get("country", vendor.get("country")),
+            "province": data.get("province", vendor.get("province")),
+            "noTelp": data.get("noTelp", vendor.get("noTelp")),
+            "emailCompany": data.get("emailCompany", vendor.get("emailCompany")),
+            "website": data.get("website", vendor.get("website")),
+            "namePIC": data.get("namePIC", vendor.get("namePIC")),
+            "noTelpPIC": data.get("noTelpPIC", vendor.get("noTelpPIC")),
+            "emailPIC": data.get("emailPIC", vendor.get("emailPIC")),
+            "positionPIC": data.get("positionPIC", vendor.get("positionPIC")),
+            "NPWP": data.get("NPWP", vendor.get("NPWP")),
+            "activeStatus": data.get("activeStatus", vendor.get("activeStatus")),
+            
+            # Preserve existing arrays if no new data is provided
+            "PIC": PICs if PICs else vendor.get("PIC", []),
+            "supportingEquipment": supporting_equipment if supporting_equipment else vendor.get("supportingEquipment", []),
+            "branchOffice": branch_offices if branch_offices else vendor.get("branchOffice", []),
+            "accountBank": account_banks if account_banks else vendor.get("accountBank", []),
+            
+            "create": vendor.get("create", {}),
             "change": {
                 "updateDate": datetime.now(),
-                "updateUser": session.get('email')
+                "updateUser": session.get('username')
             }
         }
         
-        # Remove None values
-        update_fields = {key: value for key, value in update_fields.items() if value is not None}
-        
         result = vendors_collection.update_one(
-            {"_id": ObjectId(vendor_id)}, 
+            {"_id": vendor_id},
             {"$set": update_fields}
         )
         
-        if result.matched_count == 0:
-            return jsonify({"error": "Vendor not found"}), 404
+        if result.modified_count == 0:
+            return jsonify({"error": "No changes were made"}), 400
         
         return jsonify({"message": "Vendor updated successfully"}), 200
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.error(f"Error updating vendor: {str(e)}")
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 @app.route('/api/vendors/<vendor_id>', methods=['DELETE'])
 @role_required(['DBA', 'Admin'])

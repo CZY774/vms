@@ -3,46 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login - CornelVHub</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --background-color: rgb(255, 255, 255);
+            --border-color: rgb(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            scrollbar-color: transparent transparent;
+            scrollbar-width: 0px;
+            font-family: "rubik", sans-serif;
+        }
+
+        *::-webkit-scrollbar {
+            width: 0;
+        }
+
+        body {
+            background-color: var(--background-color);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            margin: 0;
+        }
+
+        nav {
+            display: flex;
+            width: 100%;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav > .nav-section {
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+            border-left: 1px solid var(--border-color);
+            align-items: center;
+            justify-content: center;
+        }
+
+        #branding-logo {
+            font-size: 1.5rem;
+            font-weight: 400;
+            letter-spacing: 5px;
+            flex-grow: 2;
+            justify-content: flex-start;
+            margin: 0px;
+        }
+
+        a {
+            text-decoration: none;
+            color: black;
+        }
+
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            padding: 2rem;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+        }
+
+        .login-form h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            letter-spacing: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: white;
+            transition: background-color 0.3s, color 0.3s;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .login-btn:hover {
+            background-color: lightseagreen;
+            color: white;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        #forgotPasswordForm {
+            display: none;
+        }
+
+        .footer {
+            text-align: center;
+            letter-spacing: 5px;
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        #togglePassword {
+            color: #aaa;
+            font-size: 1.2rem;
+            user-select: none;
+        }
+        #togglePassword:hover {
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-    <h1>Login</h1>
-    <form id="loginForm" method="POST">
-        <div>
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
+    <nav>
+        <div id="branding-logo" class="nav-section">
+          <p id="branding-logo">CORNELVHUB</p>
         </div>
-        <div>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
+        <div id="nav-allmov-section" class="nav-section">
+          <a href="https://www.instagram.com/corneliusyoga/" target="blank">INSTAGRAM</a>
         </div>
-        <button type="submit">Login</button>
-    </form>
-    <p><a href="#" id="forgotPasswordLink">Forgot Password?</a></p>
+        <div id="nav-social-section" class="nav-section">
+          <a href="https://www.linkedin.com/in/cornelius-yoga-783b6a291/" target="blank">LINKEDIN</a>
+        </div>
+        <div id="nav-signin-section" class="nav-section">
+          <a href="https://github.com/CZY774" target="blank">GITHUB</a>
+        </div>
+    </nav>
 
-    <div id="forgotPasswordForm" style="display: none;">
-        <h2>Forgot Password</h2>
-        <form id="resetPasswordForm">
-            <div>
-                <label for="reset_username">Username:</label>
-                <input type="text" id="reset_username" name="reset_username" required>
+    <div class="login-container">
+        <div class="login-form">
+            <form id="loginForm" method="POST">
+                <h1 class="login-title">LOGIN</h1>
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="password" name="password" required>
+                        <i id="togglePassword" class="fas fa-eye" 
+                           style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;"></i>
+                    </div>
+                </div>                             
+                <button type="submit" class="login-btn">Login</button>
+                <div class="forgot-password">
+                    <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+                </div>
+            </form>
+
+            <div id="forgotPasswordForm">
+                <form id="resetPasswordForm">
+                    <h1 class="login-title">FORGOT?</h1>
+                    <div class="form-group">
+                        <label for="reset_username">Username</label>
+                        <input type="text" id="reset_username" name="reset_username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password">New Password</label>
+                        <div style="position: relative;">
+                            <input type="password" id="new_password" name="new_password" required>
+                            <i id="togglePassword" class="fas fa-eye"
+                               style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;" ></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm Password</label>
+                        <div style="position: relative;">
+                            <input type="password" id="confirm_password" name="confirm_password" required>
+                            <i id="togglePassword" class="fas fa-eye"
+                               style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;"></i>
+                        </div>
+                    </div>
+                    <button type="submit" class="login-btn">Reset Password</button>
+                    <div class="forgot-password">
+                        <a href="#" id="closeForgotPassword">Cancel</a>
+                    </div>
+                </form>
             </div>
-            <div>
-                <label for="new_password">New Password:</label>
-                <input type="password" id="new_password" name="new_password" required>
-            </div>
-            <div>
-                <label for="confirm_password">Confirm Password:</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
-            </div>
-            <button type="submit">Reset Password</button>
-            <button type="button" id="closeForgotPassword">Cancel</button>
-        </form>
+        </div>
     </div>
 
+    <p class="footer" id="author">
+        by Cornelius Yoga - 672022204
+    </p>
+
     <script>
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const passwordInput = document.getElementById('password');
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+
         document.getElementById('forgotPasswordLink').addEventListener('click', function(event) {
             event.preventDefault();
+            document.getElementById('loginForm').style.display = 'none';
             document.getElementById('forgotPasswordForm').style.display = 'block';
             document.getElementById('resetPasswordForm').reset();
         });
@@ -66,14 +250,47 @@
             alert(result.message);
 
             if (result.success) {
+                document.getElementById('loginForm').style.display = 'block';
                 document.getElementById('forgotPasswordForm').style.display = 'none';
                 document.getElementById('resetPasswordForm').reset();
             }
         });
 
         document.getElementById('closeForgotPassword').addEventListener('click', function () {
+            document.getElementById('loginForm').style.display = 'block';
             document.getElementById('forgotPasswordForm').style.display = 'none';
             document.getElementById('resetPasswordForm').reset();
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                // Kirim request ke server
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                // Ambil respons dari server
+                const result = await response.json();
+
+                // Cek apakah login berhasil
+                if (response.ok && result.success) {
+                    window.location.href = result.redirectUrl; // Pindah ke URL dashboard
+                } else {
+                    alert(result.message || "Login failed"); // Tampilkan pesan error
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An unexpected error occurred.");
+            }
         });
     </script>
 </body>
