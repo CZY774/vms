@@ -48,12 +48,14 @@ def validate_mongodb_id(id_string):
         return False
 
 def hash_password(password):
-    """Hash password menggunakan bcrypt"""
+    """Hash password menggunakan bcrypt dan kembalikan dalam format binary sesuai MongoDB."""
     try:
-        return hashpw(password.encode('utf-8'), gensalt())
+        hashed = hashpw(password.encode('utf-8'), gensalt())
+        return hashed
     except Exception as e:
         print(f"Error while hashing password: {e}")
         return None
+    
 def verify_password(password, hashed):
     """Verifikasi password dengan hash"""
     return hashpw(password.encode('utf-8'), hashed) == hashed
@@ -68,16 +70,17 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def role_required(allowed_roles):
-    def decorator(f):
-        @wraps(f)
-        @login_required
-        def decorated_function(*args, **kwargs):
+def role_required(roles):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
             user_role = session.get('role')
-            if user_role not in allowed_roles:
-                return jsonify({"error": "Forbidden"}), 403
-            return f(*args, **kwargs)
-        return decorated_function
+            if not user_role:
+                return jsonify({"error": "Unauthorized: Role not found"}), 401
+            if user_role not in roles:
+                return jsonify({"error": "Forbidden: Insufficient permissions"}), 403
+            return func(*args, **kwargs)
+        return wrapper
     return decorator
 
 # Basic Routes
@@ -179,36 +182,16 @@ def get_session_role():
         return jsonify({"error": str(e)}), 500
 
 # Dashboard Routes
+# DBA Dashboard
 @app.route('/dashboard/dba')
 @role_required(['DBA'])
 def dba_dashboard():
     return render_template('dashboard-dba.html')
 
-@app.route('/dashboard/admin')
-@role_required(['Admin'])
-def admin_dashboard():
-    return render_template('dashboard-admin.html')
-
-@app.route('/dashboard/finance')
-@role_required(['Finance'])
-def finance_dashboard():
-    return render_template('dashboard-finance.html')
-
-@app.route('/dashboard/vendor')
-@role_required(['Vendor'])
-def vendor_dashboard():
-    return render_template('dashboard-vendor.html')
-
 @app.route('/dashboard/dba/manage-users')
 @login_required
 @role_required(['DBA'])
 def manage_users():
-    return render_template('manage-users.html')
-
-@app.route('/dashboard/admin/manage-users')
-@login_required
-@role_required(['Admin'])
-def manage_user():
     return render_template('manage-users.html')
 
 @app.route('/dashboard/dba/manage-banks')
@@ -229,14 +212,80 @@ def manage_branches():
 def manage_vendors():
     return render_template('manage-vendors.html')
 
+# Admin Dashboard
+@app.route('/dashboard/admin')
+@role_required(['Admin'])
+def admin_dashboard():
+    return render_template('dashboard-admin.html')
+
+@app.route('/dashboard/admin/manage-users')
+@login_required
+@role_required(['Admin'])
+def manage_users_admin():
+    return render_template('manage-users.html')
+
+@app.route('/dashboard/admin/manage-banks')
+@login_required
+@role_required(['Admin', 'Finance'])
+def manage_banks_admin():
+    return render_template('manage-banks.html')
+
+@app.route('/dashboard/admin/manage-branches')
+@login_required
+@role_required(['Admin', 'Finance'])
+def manage_branches_admin():
+    return render_template('manage-branches.html')
+
+@app.route('/dashboard/admin/manage-vendors')
+@login_required
+@role_required(['Admin', 'Vendor'])
+def manage_vendors_admin():
+    return render_template('manage-vendors.html')
+
+# Finance Dashboard
+@app.route('/dashboard/finance')
+@role_required(['Finance'])
+def finance_dashboard():
+    return render_template('dashboard-finance.html')
+
+@app.route('/dashboard/finance/manage-banks')
+@login_required
+@role_required(['Finance', 'Admin'])
+def manage_banks_finance():
+    return render_template('manage-banks.html')
+
+@app.route('/dashboard/finance/manage-branches')
+@login_required
+@role_required(['Finance', 'Admin'])
+def manage_branches_finance():
+    return render_template('manage-branches.html')
+
+# Vendor Dashboard
+@app.route('/dashboard/vendor')
+@role_required(['Vendor'])
+def vendor_dashboard():
+    return render_template('dashboard-vendor.html')
+
+@app.route('/dashboard/vendor/manage-vendors')
+@login_required
+@role_required(['Vendor', 'Admin'])
+def manage_vendors_vendor():
+    return render_template('manage-vendors.html')
+
 # User Management API Routes (DBA Only)
 @app.route('/api/users', methods=['GET'])
-@role_required(['DBA'])
+@role_required(['DBA', 'Admin'])
 def get_users():
     try:
-        users = list(users_collection.find({}, {'password': 0}))
+        current_role = session.get('role')
+
+        # Jika role Admin, filter untuk tidak menampilkan pengguna dengan role DBA
+        query = {} if current_role == 'DBA' else {"role": {"$ne": "DBA"}}
+
+        users = list(users_collection.find(query, {'password': 0}))
         return jsonify([{**user, '_id': str(user['_id'])} for user in users])
     except Exception as e:
+        print("Error fetching users:", str(e))  # Log error di backend
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/users', methods=['POST'])
@@ -245,6 +294,8 @@ def create_user():
     try:
         if users_collection.count_documents({}) == 0:  # Jika kosong
             dba_password = hash_password("dba123!@#")
+            if not dba_password:
+                return jsonify({"error": "Failed to hash DBA password"}), 500
             dba_user = {
                 "username": "dba",
                 "email": "dba@example.com",
@@ -271,10 +322,14 @@ def create_user():
         if users_collection.find_one({"username": data['username']}):
             return jsonify({"error": "Username already exists"}), 400
 
+        hashed_password = hash_password(data['password'])
+        if not hashed_password:
+            return jsonify({"error": "Failed to hash password"}), 500
+
         user_doc = {
             "username": data['username'],
             "email": data['email'],
-            "password": hash_password(data['password']),
+            "password": hashed_password,  # Simpan langsung dalam bentuk hashed binary
             "role": data['role'],
             "active": True,
             "created_at": datetime.utcnow(),
@@ -287,18 +342,19 @@ def create_user():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/users/<username>', methods=['GET'])
-@role_required(['DBA'])
+@role_required(['DBA', 'Admin'])
 def get_user(username):
     try:
-        # Mendapatkan username dari session
-        current_user = session.get('username')
-        if not current_user:
-            return jsonify({"error": "Unauthorized"}), 401
+        current_role = session.get('role')
 
         # Cari user di database, kecualikan field password
         user = users_collection.find_one({"username": username}, {'password': 0})
         if not user:
             return jsonify({"error": "User not found"}), 404
+
+        # Cegah Admin melihat detail DBA
+        if current_role == 'Admin' and user['role'] == 'DBA':
+            return jsonify({"error": "Access denied"}), 403
 
         # Convert _id menjadi string
         user['_id'] = str(user['_id'])
@@ -317,6 +373,7 @@ def update_user(username):
             return jsonify({"error": "Unauthorized"}), 401
 
         data = request.get_json()
+        password = data.get('password')
         user_to_update = users_collection.find_one({"username": username})
 
         if not user_to_update:
@@ -326,6 +383,12 @@ def update_user(username):
             return jsonify({"error": "Admins cannot modify users with the DBA role"}), 403
 
         update_data = {key: value for key, value in data.items() if value is not None}
+        if password:
+            hashed_password = hash_password(password)
+            if not hashed_password:
+                return jsonify({"error": "Failed to hash password"}), 500
+            update_data['password'] = hashed_password
+
         if not update_data:
             return jsonify({"error": "No fields to update"}), 400
 
@@ -380,10 +443,20 @@ def delete_user(username):
 @role_required(['DBA', 'Admin', 'Finance'])
 def get_banks():
     try:
-        banks = list(banks_collection.find())
+        # Ambil parameter query dari URL
+        status = request.args.get('status', '').upper()
+
+        # Query ke database berdasarkan status
+        query = {}
+        if status == 'ACTIVE':
+            query = {"activeStatus": "Y"}
+
+        # Pastikan koleksi bank tersedia
+        banks = list(banks_collection.find(query, {"_id": 1, "bankDesc": 1}))
         return jsonify([{**bank, '_id': str(bank['_id'])} for bank in banks])
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
 
 @app.route('/api/banks', methods=['POST'])
 @role_required(['DBA', 'Admin', 'Finance'])
@@ -552,46 +625,75 @@ def get_vendors():
     try:
         user_role = session.get('role')
         user_email = session.get('email')
-
+        
         if user_role == 'Vendor':
             vendor = vendors_collection.find_one({"emailCompany": user_email})
             if not vendor:
                 return jsonify({"error": "Vendor not found"}), 404
             vendor['_id'] = str(vendor['_id'])
-            return jsonify(vendor)
-
+            return jsonify([vendor])  # Return as a list to match frontend expectations
+        
         vendors = list(vendors_collection.find())
         return jsonify([{**vendor, '_id': str(vendor['_id'])} for vendor in vendors])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/api/vendors', methods=['POST'])
 @role_required(['DBA', 'Admin', 'Vendor'])
 def create_vendor():
     try:
+        # Log input data
         data = sanitize_input(request.get_json())
-        vendor_doc = {
-            "_id": data.get('_id'),  # Required vendor ID
-            "vendorName": data.get('vendorName', ''),  # Required vendor name
-            "unitUsaha": data.get('unitUsaha', 'IT'),  # Default: IT
-            "address": data.get('address', ''),       # Required address
-            "country": data.get('country', ''),       # Optional
-            "province": data.get('province', ''),     # Optional
-            "noTelp": data.get('noTelp', ''),         # Optional phone number
-            "emailCompany": data.get('emailCompany', ''),  # Optional email
-            "activeStatus": "Y",  # Default: Active
+        print("Received data:", data)  # Tambahkan log
+        
+        required_fields = [
+            "vendorname", "unitusaha", "emailcompany", "address", 
+            "country", "province", "notelp", "activestatus"
+        ]
+        
+        # Validasi field wajib
+        missing_fields = [field for field in required_fields if field not in data or not data[field]]
+        if missing_fields:
+            error_message = f"Missing required fields: {', '.join(missing_fields)}"
+            print(error_message)  # Log error
+            return jsonify({"error": error_message}), 400
+        
+        # Validasi bank - use string comparison instead of ObjectId
+        for account in data.get("accountBank", []):
+            bank_id = account.get("bankId")
+            if not bank_id:
+                continue
+            bank_exists = banks_collection.find_one({"_id": bank_id, "activeStatus": "Y"})
+            if not bank_exists:
+                error_message = f"Invalid bank selected: {bank_id}"
+                print(error_message)  # Log error
+                return jsonify({"error": error_message}), 400
+        
+        # Insert vendor
+        vendor = {
+            "vendorname": data["vendorname"],
+            "unitusaha": data["unitusaha"],
+            "emailcompany": data["emailcompany"],
+            "address": data["address"],
+            "country": data["country"],
+            "province": data["province"],
+            "notelp": data["notelp"],
+            "activestatus": data.get("activestatus", "Y"),
+            "accountBank": data.get("accountBank", []),
+            "supportingEquipment": data.get("supportingEquipment", []),
+            "branchOffice": data.get("branchOffice", []),
+            "pic": data.get("pic", []),
             "change": {
-                "createDate": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-                "createUser": session.get('username'),
-                "updateUser": "",
-                "updateDate": ""
+                "createuser": session.get('username'),
+                "createdate": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                "updateuser": "",
+                "updatedate": ""
             }
         }
-
-        result = vendors_collection.insert_one(vendor_doc)
-        return jsonify({"success": True, "id": str(result.inserted_id)})
+        result = vendors_collection.insert_one(vendor)
+        return jsonify({"message": "Vendor created successfully", "_id": str(result.inserted_id)}), 201
     except Exception as e:
+        print("Server error:", str(e))  # Log error
         return jsonify({"error": str(e)}), 500
 
 
@@ -599,10 +701,11 @@ def create_vendor():
 @role_required(['DBA', 'Admin', 'Vendor'])
 def get_vendor(vendor_id):
     try:
-        vendor = vendors_collection.find_one({"_id": vendor_id})
+        # Ensure vendor_id is a valid ObjectId
+        vendor = vendors_collection.find_one({"_id": ObjectId(vendor_id)})
         if not vendor:
             return jsonify({"error": "Vendor not found"}), 404
-
+        
         vendor['_id'] = str(vendor['_id'])
         return jsonify(vendor)
     except Exception as e:
@@ -616,45 +719,48 @@ def update_vendor(vendor_id):
         user_role = session.get('role')
         user_email = session.get('email')
         
-        vendor = vendors_collection.find_one({"_id": vendor_id})
+        # Ensure vendor_id is a valid ObjectId
+        vendor = vendors_collection.find_one({"_id": ObjectId(vendor_id)})
         if not vendor:
             return jsonify({"error": "Vendor not found"}), 404
-
+        
         if user_role == 'Vendor' and vendor.get('emailCompany') != user_email:
             return jsonify({"error": "Access denied"}), 403
-
+        
         data = sanitize_input(request.get_json())
         
         # Prepare update document
-        update_doc = {
-            "partnerType": data.get('partnerType', vendor.get('partnerType', '')),
-            "vendorName": data.get('vendorName', vendor.get('vendorName', '')),
-            "unitUsaha": data.get('unitUsaha', vendor.get('unitUsaha', 'IT')),
-            "address": data.get('address', vendor.get('address', '')),
-            "country": data.get('country', vendor.get('country', '')),
-            "province": data.get('province', vendor.get('province', '')),
-            "noTelp": data.get('noTelp', vendor.get('noTelp', '')),
-            "emailCompany": data.get('emailCompany', vendor.get('emailCompany', '')),
-            "website": data.get('website', vendor.get('website', '')),
-            "namePIC": data.get('namePIC', vendor.get('namePIC', '')),
-            "noTelpPIC": data.get('noTelpPIC', vendor.get('noTelpPIC', '')),
-            "emailPIC": data.get('emailPIC', vendor.get('emailPIC', '')),
-            "positionPIC": data.get('positionPIC', vendor.get('positionPIC', '')),
-            "noNPWP": data.get('noNPWP', vendor.get('noNPWP', '')),
-            "activeStatus": data.get('activeStatus', vendor.get('activeStatus', 'Y')),
-            "supportingEquipment": data.get('supportingEquipment', vendor.get('supportingEquipment', [])),
-            "branchOffice": data.get('branchOffice', vendor.get('branchOffice', [])),
-            "accountBank": data.get('accountBank', vendor.get('accountBank', []))
+        update_fields = {
+            "vendorName": data.get("vendorName"),
+            "unitUsaha": data.get("unitUsaha"),
+            "emailCompany": data.get("emailCompany"),
+            "address": data.get("address"),
+            "country": data.get("country"),
+            "province": data.get("province"),
+            "noTelp": data.get("noTelp"),
+            "activeStatus": data.get("activeStatus"),
+            "accountBank": data.get("accountBank"),
+            "supportingEquipment": data.get("supportingEquipment"),
+            "branchOffice": data.get("branchOffice"),
+            "pic": data.get("pic"),
+            "change": {
+                "updateDate": datetime.now(),
+                "updateUser": session.get('email')
+            }
         }
-
+        
+        # Remove None values
+        update_fields = {key: value for key, value in update_fields.items() if value is not None}
+        
         result = vendors_collection.update_one(
-            {"_id": vendor_id},
-            {"$set": update_doc}
+            {"_id": ObjectId(vendor_id)}, 
+            {"$set": update_fields}
         )
         
-        if result.modified_count:
-            return jsonify({"success": True})
-        return jsonify({"error": "No changes made"}), 404
+        if result.matched_count == 0:
+            return jsonify({"error": "Vendor not found"}), 404
+        
+        return jsonify({"message": "Vendor updated successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

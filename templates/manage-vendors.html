@@ -12,16 +12,30 @@
         <!-- Content will be loaded dynamically -->
     </div>
     <li><a href="/logout">Logout</a></li>
-
+    
     <script>
+        let equipmentIndex = 0;
+        let branchOfficeIndex = 0;
+        let picIndex = 0;
+        let accountBankIndex = 0;
+
         function loadVendors() {
             fetch('/api/vendors', {
                 method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json' 
+                },
                 credentials: 'include',
             })
-            .then(response => response.json())
-            .then(vendors => {
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const vendors = Array.isArray(data) ? data : [];
+                
                 const content = document.getElementById('content');
                 const tableBody = vendors.map(vendor => `
                     <tr>
@@ -45,7 +59,7 @@
                             ${vendor.pic?.map(pic => `
                             <p>${pic.name || ''} (${pic.email || ''}, ${pic.noTelp || ''})</p>
                             `).join('') || ''}
-                            </td>
+                        </td>
                         <td>
                             ${vendor.supportingEquipment?.map(equipment => `
                                 <p>${equipment.toolType || ''} - ${equipment.count || ''} (${equipment.merk || ''})</p>
@@ -59,7 +73,7 @@
                         <td>
                             ${vendor.accountBank?.map(account => `
                                 <p>${account.bankName || ''} - ${account.accountNumber || ''}</p>
-                                `).join('') || ''}
+                            `).join('') || ''}
                         </td>
                         <td>${vendor.change?.createDate || ''}</td>
                         <td>${vendor.change?.createUser || ''}</td>
@@ -117,157 +131,306 @@
             });
         }
 
+        function fetchVendorDetails(vendorId) {
+            return fetch(`/api/vendors/${vendorId}`, {
+                method: 'GET',
+                headers: { 
+                    'Content-Type': 'application/json' 
+                },
+                credentials: 'include',
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch vendor details for ID: ${vendorId}`);
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Error fetching vendor details:', error);
+                throw error;
+            });
+        }
+
+        // Function to show Add Vendor Form
         function showAddVendorForm() {
             const content = document.getElementById('content');
             content.innerHTML = `
                 <h2>Add New Vendor</h2>
                 <form id="addVendorForm" onsubmit="submitNewVendor(event)">
-                    <div>
+                    <div class="form-group">
                         <label for="vendor_code">Vendor Code:</label>
                         <input type="text" id="vendor_code" name="_id" required>
                     </div>
-                    <div>
+                    <div class="form-group">
                         <label for="vendorName">Vendor Name:</label>
-                        <input type="text" id="vendorName" name="vendorName" required><br>
+                        <input type="text" id="vendorName" name="vendorname" required>
                     </div>
-                    <div>
+                    <div class="form-group">
                         <label for="unitUsaha">Unit Usaha:</label>
-                        <input type="text" id="unitUsaha" name="unitUsaha"><br>
+                        <input type="text" id="unitUsaha" name="unitusaha">
                     </div>
-                    <div>
+                    <div class="form-group">
+                        <label for="emailCompany">Email:</label>
+                        <input type="email" id="emailCompany" name="emailcompany" required>
+                    </div>
+                    <div class="form-group">
                         <label for="address">Address:</label>
-                        <input type="text" id="address" name="address" required><br>
+                        <input type="text" id="address" name="address" required>
                     </div>
-                    <div id="dynamicFields">
-                        <h3>Account Banks</h3>
-                        <div id="accountBankFields"></div>
-                        <button type="button" onclick="addAccountBank()">Add Account Bank</button>
+                    <div class="form-group">
+                        <label for="country">Country:</label>
+                        <input type="text" id="country" name="country" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="province">Province:</label>
+                        <input type="text" id="province" name="province" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="notelp">Phone Number:</label>
+                        <input type="tel" id="notelp" name="notelp" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="activestatus">Active Status:</label>
+                        <select id="activestatus" name="activestatus" required>
+                            <option value="Y">Active</option>
+                            <option value="N">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div>
                         <h3>Supporting Equipment</h3>
                         <div id="equipmentFields"></div>
                         <button type="button" onclick="addSupportingEquipment()">Add Equipment</button>
+                    </div>
+
+                    <div>
                         <h3>Branch Office</h3>
                         <div id="branchOfficeFields"></div>
                         <button type="button" onclick="addBranchOffice()">Add Branch Office</button>
+                    </div>
+
+                    <div>
                         <h3>PIC</h3>
                         <div id="picFields"></div>
                         <button type="button" onclick="addPIC()">Add PIC</button>
                     </div>
-                    <button type="submit">Save</button>
+
+                    <div>
+                        <h3>Account Bank</h3>
+                        <div id="accountBankFields"></div>
+                        <button type="button" onclick="addAccountBank()">Add Account Bank</button>
+                    </div>
+
+                    <button type="submit">Save Vendor</button>
                 </form>
             `;
+
+            // Load active banks
+            fetch('/api/banks?status=ACTIVE', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(activeBanks => {
+                const accountBankFields = document.getElementById('accountBankFields');
+                const bankSelect = document.createElement('select');
+                bankSelect.id = 'bankSelect';
+                bankSelect.innerHTML = '<option value="">Select Bank</option>';
+                
+                activeBanks.forEach(bank => {
+                    const option = document.createElement('option');
+                    option.value = bank._id;
+                    option.textContent = bank.bankDesc;
+                    bankSelect.appendChild(option);
+                });
+
+                // Store for later use in addAccountBank
+                window.activeBanks = activeBanks;
+            })
+            .catch(error => {
+                console.error('Error loading banks:', error);
+                alert('Failed to load bank list.');
+            });
         }
 
-        function addAccountBank() {
-            const container = document.getElementById('accountBankFields');
-            if (container) {
-                container.insertAdjacentHTML('beforeend', `
-                    <div>
-                        <label>Bank Code:</label>
-                        <input type="text" name="accountBank_bankCode[]" required>
-                        <label>Bank Name:</label>
-                        <input type="text" name="accountBank_bankName[]" required>
-                        <label>Account Number:</label>
-                        <input type="text" name="accountBank_accountNumber[]" required>
-                        <label>Account Name:</label>
-                        <input type="text" name="accountBank_accountName[]" required>
-                        <button type="button" onclick="this.parentElement.remove()">Remove</button>
-                    </div>
-                `);
-            }
-        }
 
+
+        // Dynamic Field Addition Functions
         function addSupportingEquipment() {
-            const container = document.getElementById('equipmentFields');
-            if (container) {
-                container.insertAdjacentHTML('beforeend', `
-                    <div>
-                        <label>Tool Type:</label>
-                        <input type="text" name="supportingEquipment_toolType[]" required>
-                        <label>Count:</label>
-                        <input type="number" name="supportingEquipment_count[]" required>
-                        <label>Merk:</label>
-                        <input type="text" name="supportingEquipment_merk[]" required>
-                        <button type="button" onclick="this.parentElement.remove()">Remove</button>
-                    </div>
-                `);
-            }
+            const equipmentFields = document.getElementById("equipmentFields");
+            equipmentFields.insertAdjacentHTML("beforeend", `
+                <div class="dynamic-field">
+                    <label>Tool Type:</label>
+                    <input type="text" name="supportingEquipment_toolType[${equipmentIndex}]" required>
+                    <label>Count:</label>
+                    <input type="number" name="supportingEquipment_count[${equipmentIndex}]" required>
+                    <label>Merk:</label>
+                    <input type="text" name="supportingEquipment_merk[${equipmentIndex}]" required>
+                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                </div>
+            `);
+            equipmentIndex++;
         }
 
         function addBranchOffice() {
-            const container = document.getElementById('branchOfficeFields');
-            if (container) {
-                container.insertAdjacentHTML('beforeend', `
-                    <div>
-                        <label>Branch Name:</label>
-                        <input type="text" name="branchOffice_branchName[]" required>
-                        <label>Location:</label>
-                        <input type="text" name="branchOffice_location[]" required>
-                        <button type="button" onclick="this.parentElement.remove()">Remove</button>
-                    </div>
-                `);
-            }
+            const branchOfficeFields = document.getElementById("branchOfficeFields");
+            branchOfficeFields.insertAdjacentHTML("beforeend", `
+                <div class="dynamic-field">
+                    <label>Branch Name:</label>
+                    <input type="text" name="branchOffice_branchName[${branchOfficeIndex}]" required>
+                    <label>Location:</label>
+                    <input type="text" name="branchOffice_location[${branchOfficeIndex}]" required>
+                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                </div>
+            `);
+            branchOfficeIndex++;
         }
 
         function addPIC() {
-            const container = document.getElementById('picFields');
-            if (container) {
-                container.insertAdjacentHTML('beforeend', `
-                    <div>
-                        <label>Name:</label>
-                        <input type="text" name="pic_name[]" required>
-                        <label>Email:</label>
-                        <input type="email" name="pic_email[]" required>
-                        <button type="button" onclick="this.parentElement.remove()">Remove</button>
-                    </div>
-                `);
-            }
+            const picFields = document.getElementById("picFields");
+            picFields.insertAdjacentHTML("beforeend", `
+                <div class="dynamic-field">
+                    <label>Name:</label>
+                    <input type="text" name="pic_name[${picIndex}]" required>
+                    <label>Email:</label>
+                    <input type="email" name="pic_email[${picIndex}]" required>
+                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                </div>
+            `);
+            picIndex++;
         }
 
+        function addAccountBank() {
+            const accountBankFields = document.getElementById("accountBankFields");
+            
+            // Create bank select element if not already created
+            let bankSelect = document.getElementById('bankSelect');
+            if (!bankSelect) {
+                bankSelect = document.createElement('select');
+                bankSelect.id = 'bankSelect';
+                bankSelect.innerHTML = '<option value="">Select Bank</option>';
+                
+                (window.activeBanks || []).forEach(bank => {
+                    const option = document.createElement('option');
+                    option.value = bank._id;
+                    option.textContent = bank.bankDesc;
+                    bankSelect.appendChild(option);
+                });
+            }
+
+            accountBankFields.insertAdjacentHTML("beforeend", `
+                <div class="dynamic-field">
+                    <label>Bank:</label>
+                    ${bankSelect.outerHTML}
+                    <label>Account Number:</label>
+                    <input type="text" name="accountBank_accountNumber[${accountBankIndex}]" required>
+                    <label>Account Name:</label>
+                    <input type="text" name="accountBank_accountName[${accountBankIndex}]" required>
+                    <button type="button" onclick="this.parentElement.remove()">Remove</button>
+                </div>
+            `);
+            accountBankIndex++;
+        }
+
+        // Parse Array Fields
+        function parseArrayFields(formData, keyPrefix) {
+            const result = [];
+            for (const [key, value] of formData.entries()) {
+                if (key.startsWith(`${keyPrefix}_`)) {
+                    const indexMatch = key.match(/\[(\d+)]/);
+                    if (indexMatch) {
+                        const index = parseInt(indexMatch[1], 10);
+                        const fieldName = key.split("_")[1].split("[")[0];
+                        if (!result[index]) result[index] = {};
+                        result[index][fieldName] = value;
+                    }
+                }
+            }
+            return result;
+        }
+
+        // Submit Vendor Form
         function submitNewVendor(event) {
             event.preventDefault();
-            const formData = new FormData(event.target);
-            const vendorData = Object.fromEntries(formData.entries());
+            const form = event.target;
+            const formData = new FormData(form);
 
-            // Handle nested fields (arrays)
-            vendorData.accountBank = formData.getAll('accountBank_bankCode').map((_, i) => ({
-                bankCode: formData.getAll('accountBank_bankCode')[i],
-                bankName: formData.getAll('accountBank_bankName')[i],
-                accountNumber: formData.getAll('accountBank_accountNumber')[i],
-                accountName: formData.getAll('accountBank_accountName')[i],
-            }));
+            // Create vendor data object with required fields
+            const vendorData = {
+                vendorname: document.getElementById('vendorName').value,
+                unitusaha: document.getElementById('unitUsaha').value,
+                emailcompany: document.getElementById('emailCompany').value,
+                address: document.getElementById('address').value,
+                country: document.getElementById('country').value,
+                province: document.getElementById('province').value,
+                notelp: document.getElementById('notelp').value,
+                activestatus: document.getElementById('activestatus').value,
+            };
 
-            vendorData.supportingEquipment = formData.getAll('supportingEquipment_toolType').map((_, i) => ({
-                toolType: formData.getAll('supportingEquipment_toolType')[i],
-                count: formData.getAll('supportingEquipment_count')[i],
-                merk: formData.getAll('supportingEquipment_merk')[i],
-            }));
+            // Parse dynamic fields
+            vendorData.supportingEquipment = parseArrayFields(formData, "supportingEquipment") || [];
+            vendorData.branchOffice = parseArrayFields(formData, "branchOffice") || [];
+            vendorData.pic = parseArrayFields(formData, "pic") || [];
+            
+            // Handle Account Banks - use bank code directly
+            vendorData.accountBank = [];
+            const accountBankFields = document.querySelectorAll('#accountBankFields .dynamic-field');
+            accountBankFields.forEach((field, index) => {
+                const bankSelect = field.querySelector('select');
+                const accountNumber = field.querySelector('input[name^="accountBank_accountNumber"]');
+                const accountName = field.querySelector('input[name^="accountBank_accountName"]');
+                
+                vendorData.accountBank.push({
+                    bankId: bankSelect.value,  // This will be the bank code like "BBCA"
+                    accountNumber: accountNumber.value,
+                    accountName: accountName.value
+                });
+            });
 
-            vendorData.branchOffice = formData.getAll('branchOffice_branchName').map((_, i) => ({
-                branchName: formData.getAll('branchOffice_branchName')[i],
-                location: formData.getAll('branchOffice_location')[i],
-            }));
-
-            vendorData.pic = formData.getAll('pic_name').map((_, i) => ({
-                name: formData.getAll('pic_name')[i],
-                email: formData.getAll('pic_email')[i],
-            }));
-
-            fetch('/api/vendors', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify(vendorData),
+            // Send data to server
+            fetch("/api/vendors", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(vendorData)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.error || "Failed to create vendor");
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
-                alert('Vendor added successfully');
-                loadVendors();
+                alert("Vendor created successfully");
+                // Optional: reset form or navigate away
+                form.reset();
+                // Reset dynamic field indices
+                equipmentIndex = 0;
+                branchOfficeIndex = 0;
+                picIndex = 0;
+                accountBankIndex = 0;
+                // Clear dynamic fields
+                document.getElementById('equipmentFields').innerHTML = '';
+                document.getElementById('branchOfficeFields').innerHTML = '';
+                document.getElementById('picFields').innerHTML = '';
+                document.getElementById('accountBankFields').innerHTML = '';
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert(`Error adding vendor: ${error.message}`);
+                console.error("Error:", error.message);
+                alert(`Error creating vendor: ${error.message}`);
             });
         }
+
+
 
         function editVendor(vendorId) {
             fetch(`/api/vendors/${vendorId}`, {
@@ -384,7 +547,7 @@
                         <input type="text" name="noTelp" value="${vendor.noTelp || ''}">
                     </div>
                     <div>
-                        <label>Email:</label>
+                        <label>Company Email:</label>
                         <input type="email" name="emailCompany" value="${vendor.emailCompany || ''}">
                     </div>
                     <div>
@@ -426,6 +589,8 @@
                                     <input type="number" name="supportingEquipment_count[]" value="${equipment.count || ''}">
                                     <label>Merk:</label>
                                     <input type="text" name="supportingEquipment_merk[]" value="${equipment.merk || ''}">
+                                    <label>Condition:</label>
+                                    <input type="text" name="supportingEquipment_condition[]" value="${equipment.condition || ''}">
                                     <button type="button" onclick="this.parentElement.remove()">Remove</button>
                                 </div>
                             `).join('')}
@@ -441,6 +606,16 @@
                                     <input type="text" name="branchOffice_branchName[]" value="${branch.branchName || ''}">
                                     <label>Location:</label>
                                     <input type="text" name="branchOffice_location[]" value="${branch.location || ''}">
+                                    <label>Address:</label>
+                                    <input type="text" name="branchOffice_address[]" value="${branch.address || ''}">
+                                    <label>Country:</label>
+                                    <input type="text" name="branchOffice_country[]" value="${branch.country || ''}">
+                                    <label>No Telp:</label>
+                                    <input type="text" name="branchOffice_noTelp[]" value="${branch.noTelp || ''}">
+                                    <label>Website:</label>
+                                    <input type="text" name="branchOffice_website[]" value="${branch.website || ''}">
+                                    <label>Email:</label>
+                                    <input type="email" name="branchOffice_email[]" value="${branch.email || ''}">
                                     <button type="button" onclick="this.parentElement.remove()">Remove</button>
                                 </div>
                             `).join('')}
@@ -452,10 +627,14 @@
                         <div id="picFields">
                             ${(vendor.pic || []).map(pic => `
                                 <div>
+                                    <label>Username:</label>
+                                    <input type="text" name="pic_username[]" value="${pic.username || ''}">
                                     <label>Name:</label>
                                     <input type="text" name="pic_name[]" value="${pic.name || ''}">
                                     <label>Email:</label>
                                     <input type="email" name="pic_email[]" value="${pic.email || ''}">
+                                    <label>No Telp:</label>
+                                    <input type="text" name="pic_noTelp[]" value="${pic.noTelp || ''}">
                                     <button type="button" onclick="this.parentElement.remove()">Remove</button>
                                 </div>
                             `).join('')}
@@ -473,6 +652,8 @@
                                     <input type="text" name="accountBank_bankName[]" value="${account.bankName || ''}">
                                     <label>Account Number:</label>
                                     <input type="text" name="accountBank_accountNumber[]" value="${account.accountNumber || ''}">
+                                    <label>Account Name:</label>
+                                    <input type="text" name="accountBank_accountName[]" value="${account.accountName || ''}">
                                     <button type="button" onclick="this.parentElement.remove()">Remove</button>
                                 </div>
                             `).join('')}

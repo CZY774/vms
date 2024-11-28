@@ -61,7 +61,7 @@
         }
 
         #login {
-            padding: 25px 20px 32vh 20px;
+            padding: 25px 20px 20vh 20px;
         }
 
         #tombol_login {
@@ -113,8 +113,15 @@
             width: 100%;
         }
 
-        main > article > .article-section {
+        .article-section {
+            align-items: center;
             text-align: left;
+            position: relative;
+        }
+
+        .article-section2 {
+            align-items: center;
+            text-align: right;
             position: relative;
         }
 
@@ -122,8 +129,8 @@
             font-size: 4rem;
             padding-top: 30vh;
             margin: 0px 20px 3vh 20px;
-            font-weight: bold;
-            
+            font-weight: 600;
+            letter-spacing: 5px;
         }
 
         #article-subheader {
@@ -134,7 +141,7 @@
         }
 
         #author {
-            padding: 0px 20px 10px 20px;
+            padding: 10vh 20px 10px 20px;
         }
 
         main > article > .article-title-section {
@@ -145,14 +152,63 @@
             align-self: flex-end;
         }
 
+        .question-answer-section
+        {
+            padding-left: 20vh;
+            padding-right: 60vh;
+            font-size: 18pt;
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 10vh;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .question-answer-section2
+        {
+            padding-left: 20vh;
+            padding-right: 60vh;
+            font-size: 18pt;
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 10vh;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .article-question-section {
+            font-size: 5vh;
+            font-weight: 300;
+        }
+
+        .article-answer-section {
+            font-size: 1.2rem;
+            font-weight: 100;
+        }
+
+        .article-answer-section2 {
+            font-size: 1.2rem;
+            font-weight: 100;
+        }
+
+        .footer
+        {
+            align-self: center;
+            text-align: center;
+            letter-spacing: 5px;
+        }
+
         #branding-logo {
+            font-size: 1.5rem;
+            font-weight: 400;
+            letter-spacing: 5px;
+            flex-grow: 2;
+            justify-content: flex-start;
             margin: 0px;
         }
     </style>
 </head>
 <body>
     <nav>
-        <div id="nav-logo-section" class="nav-section">
+        <div id="branding-logo" class="nav-section">
           <p id="branding-logo">CORNELVHUB</p>
         </div>
         <div id="nav-allmov-section" class="nav-section">
@@ -170,14 +226,34 @@
             <div class="article-title-section article-section">
                 <h1 id="article-header">CornelVHub</h1>
                 <h4 id="article-subheader">Your trusted solution for seamless vendor, bank, and branch management, empowering businesses to streamline operations with precision and efficiency.</h4>
-                <p id="author">by Cornelius Yoga - 672022204</p>
                 <p id="login">
                     <a id="tombol_login" href="{{ url_for('login') }}">Get Started</a>
                 </p>
             </div>
 
-            <!-- Link Explore My Creation -->
+            <div class="question-answer-section article-section">
+                <p class="article-answer-section article-section">Transform complex vendor management from time-consuming manual processes to a streamlined digital ecosystem.</p>
+                <p class="article-question-section article-section">Unparalleled Efficiency</p>
+            </div>
+            <br>
+            <div class="question-answer-section2 article-section2">
+                <p class="article-question-section article-section2">Comprehensive Control</p>
+                <p class="article-answer-section2 article-section2">Centralize your vendor data with role-based access, ensuring security, consistency, and precise information management.</p>
+            </div>
+            <br>
+            <div class="question-answer-section article-section">
+                <p class="article-answer-section article-section">Designed to grow with your business, our platform adapts seamlessly to increasing vendor networks and complexity.</p>
+                <p class="article-question-section article-section">Scalable Architecture</p>
+            </div>
+            <br>
+            <div class="question-answer-section2 article-section2">
+                <p class="article-question-section article-section2">Advanced Security</p>
+                <p class="article-answer-section2 article-section2">Implement robust role-based access controls, protecting sensitive vendor information with military-grade precision.</p>
+            </div>
         </article>
     </main>
+    <p class="footer" id="author">
+        by Cornelius Yoga - 672022204
+      </p>
 </body>
 </html>

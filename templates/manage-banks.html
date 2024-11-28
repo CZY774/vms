@@ -50,15 +50,16 @@
                 `;
 
                 banks.forEach(bank => {
+                    const setup = bank.setup || {}; // Pastikan setup tidak undefined
                     html += `
                         <tr>
                             <td>${bank._id}</td>
                             <td>${bank.bankDesc || 'No description'}</td>
                             <td>${bank.activeStatus === 'Y' ? 'Active' : 'Inactive'}</td>
-                            <td>${bank.setup.createDate}</td>
-                            <td>${bank.setup.createUser}</td>
-                            <td>${bank.setup.updateDate || 'Has not been updated'}</td>
-                            <td>${bank.setup.updateUser || 'Has not been updated'}</td>
+                            <td>${setup.createDate || 'No data'}</td>
+                            <td>${setup.createUser || 'No data'}</td>
+                            <td>${setup.updateDate || 'No data'}</td>
+                            <td>${setup.updateUser || 'No data'}</td>
                             <td>
                                 <button onclick="editBank('${bank._id}')">Edit</button>
                                 <button onclick="deleteBank('${bank._id}')">Delete</button>
@@ -66,6 +67,7 @@
                         </tr>
                     `;
                 });
+
 
                 html += `
                         </tbody>
