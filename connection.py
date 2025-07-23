@@ -3,7 +3,7 @@ import os
 from datetime import timedelta, datetime
 
 # Koneksi ke MongoDB dengan environment variable
-MONGO_URI = os.getenv('MONGO_URI', 'mongodb+srv://yogaliuze:cGCSaK31stTMt0R9@clusterkapita.hkeyv.mongodb.net/')
+MONGO_URI = os.getenv('MONGO_URI', '')
 
 client = MongoClient(MONGO_URI)
 db = client['ProyekAkhir']
